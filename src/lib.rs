@@ -1,5 +1,7 @@
 mod application;
+mod raytracer;
 
-pub use application::app::{RustTracer};
-pub use application::window::*;
-pub use application::configuration::{RendererConfiguration, RustTracerConfiguration};
+pub use application::app::RustTracer;
+pub use application::configuration::{
+    Height, RendererConfiguration, RustTracerConfiguration, Size, Width,
+};

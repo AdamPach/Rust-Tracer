@@ -1,35 +1,67 @@
-use eframe::egui::{ColorImage, Context, TextureHandle};
+use crate::Size;
+use crate::application::configuration::RendererConfiguration;
+use crate::application::renderer::Render;
+use crate::raytracer::RayTracer;
+use eframe::egui::{Context, TextureHandle};
 use eframe::{Frame, egui};
 use std::default::Default;
-use crate::application::configuration::RendererConfiguration;
+use std::sync::mpsc::Receiver;
+use std::sync::{Arc, RwLock, mpsc};
 
 pub struct RustTracerApplication {
     render: Option<TextureHandle>,
-    renderer_configuration: RendererConfiguration,
+    renderer_configuration: Arc<RwLock<RendererConfiguration>>,
+    render_receiver: Receiver<Render>,
+    window_size: Size,
+    ray_tracer: RayTracer,
 }
 
 impl RustTracerApplication {
-    pub fn new(cc: &eframe::CreationContext, renderer_configuration: RendererConfiguration) -> Self {
-        let pixels = [0; 400 * 400 * 3];
+    pub fn new(renderer_configuration: Arc<RwLock<RendererConfiguration>>) -> Self {
+        let (tx, rx) = mpsc::channel();
 
-        let color_image = ColorImage::from_rgb([400, 400], &pixels);
+        let conf = renderer_configuration.read().unwrap();
 
-        let render = cc
-            .egui_ctx
-            .load_texture("Render", color_image, Default::default());
+        let size = conf.size().clone();
+
+        drop(conf);
+
+        let mut ray_tracer = RayTracer::new(renderer_configuration.clone());
+
+        ray_tracer.start(tx);
 
         Self {
-            render: Some(render),
-            renderer_configuration
+            render: None,
+            renderer_configuration,
+            render_receiver: rx,
+            window_size: size,
+            ray_tracer,
+        }
+    }
+
+    fn try_update_render(&mut self, ctx: &egui::Context) {
+        let new_image = self.render_receiver.try_recv().ok();
+
+        match new_image {
+            Some(new_image) => {
+                self.render = Some(ctx.load_texture(
+                    "Render",
+                    new_image.to_color_image(),
+                    Default::default(),
+                ));
+            }
+            None => return,
         }
     }
 }
 
 impl eframe::App for RustTracerApplication {
     fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
+        self.try_update_render(ctx);
+
         egui::Window::new("Render")
-            .default_width(self.renderer_configuration.size().get_width())
-            .default_height(self.renderer_configuration.size().get_height())
+            .default_width(self.window_size.get_height() as f32)
+            .default_height(self.window_size.get_height() as f32)
             .show(ctx, |ui| {
                 if let Some(render) = self.render.as_mut() {
                     ui.image((render.id(), ui.available_size()));

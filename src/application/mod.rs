@@ -1,4 +1,4 @@
 pub mod app;
-pub mod gui;
-pub mod window;
 pub mod configuration;
+pub mod gui;
+pub mod renderer;

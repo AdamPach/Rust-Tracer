@@ -1,6 +1,6 @@
-use crate::application::gui::{RustTracerApplication};
+use crate::application::configuration::RustTracerConfiguration;
+use crate::application::gui::RustTracerApplication;
 use eframe::{NativeOptions, egui};
-use crate::application::configuration::{RustTracerConfiguration};
 
 pub struct RustTracer {
     options: NativeOptions,
@@ -23,9 +23,9 @@ impl RustTracer {
         eframe::run_native(
             "RustTracer",
             self.options,
-            Box::new(|cc| {
+            Box::new(|_cc| {
                 Ok(Box::<RustTracerApplication>::new(
-                    RustTracerApplication::new(cc, self.configuration.into()),
+                    RustTracerApplication::new(self.configuration.into()),
                 ))
             }),
         )
