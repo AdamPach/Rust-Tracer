@@ -23,6 +23,15 @@ impl Render {
         }
     }
 
+    pub fn black(size: Size) -> Self {
+        let render_size = size.get_width() * size.get_height() * 4;
+
+        Self {
+            size,
+            pixels_rgba: vec![0; render_size],
+        }
+    }
+
     pub fn add_pixel(&mut self, rgba: RGBA) {
         self.pixels_rgba.push(rgba.r);
         self.pixels_rgba.push(rgba.g);

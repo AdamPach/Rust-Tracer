@@ -1,17 +1,11 @@
-use std::sync::{Arc, RwLock};
-
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, Clone)]
 pub struct RendererConfiguration {
     size: Size,
-    rendering: bool,
 }
 
 impl RendererConfiguration {
     pub fn new(size: Size) -> Self {
-        RendererConfiguration {
-            size,
-            rendering: false,
-        }
+        RendererConfiguration { size }
     }
 
     pub fn size(&self) -> &Size {
@@ -21,13 +15,13 @@ impl RendererConfiguration {
 
 pub struct RustTracerConfiguration {
     window_size: Size,
-    renderer_configuration: Arc<RwLock<RendererConfiguration>>,
+    renderer_configuration: RendererConfiguration,
 }
 
 impl RustTracerConfiguration {
     pub fn new(
         window_size: Size,
-        renderer_configuration: Arc<RwLock<RendererConfiguration>>,
+        renderer_configuration: RendererConfiguration,
     ) -> RustTracerConfiguration {
         RustTracerConfiguration {
             window_size,
@@ -40,7 +34,7 @@ impl RustTracerConfiguration {
     }
 }
 
-impl From<RustTracerConfiguration> for Arc<RwLock<RendererConfiguration>> {
+impl From<RustTracerConfiguration> for RendererConfiguration {
     fn from(value: RustTracerConfiguration) -> Self {
         value.renderer_configuration
     }
