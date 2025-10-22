@@ -23,9 +23,9 @@ impl RustTracer {
         eframe::run_native(
             "RustTracer",
             self.options,
-            Box::new(|_cc| {
+            Box::new(|cc| {
                 Ok(Box::<RustTracerApplication>::new(
-                    RustTracerApplication::new(self.configuration.into()),
+                    RustTracerApplication::new(self.configuration.into(), &cc.egui_ctx),
                 ))
             }),
         )

@@ -5,53 +5,52 @@ use crate::raytracer::RayTracer;
 use eframe::egui::{Context, TextureHandle};
 use eframe::{Frame, egui};
 use std::default::Default;
-use std::sync::{Arc, RwLock};
+use std::sync::mpsc::{Receiver, Sender};
+use std::sync::{Arc, Mutex, mpsc};
 
 pub struct RustTracerApplication {
-    render: Option<TextureHandle>,
-    renderer_configuration: RendererConfiguration,
-    last_render: Arc<RwLock<Render>>,
+    render: TextureHandle,
+    render_receiver: Receiver<Render>,
     window_size: Size,
-    ray_tracer: Arc<RwLock<RayTracer>>,
+    ray_tracer: Arc<Mutex<RayTracer>>,
 }
 
 impl RustTracerApplication {
-    pub fn new(renderer_configuration: RendererConfiguration) -> Self {
+    pub fn new(renderer_configuration: RendererConfiguration, ctx: &Context) -> Self {
         let size = renderer_configuration.size().clone();
 
-        let ray_tracer = Arc::new(RwLock::new(RayTracer::new(renderer_configuration.clone())));
+        let ray_tracer = Arc::new(Mutex::new(RayTracer::new(renderer_configuration)));
 
-        let last_render = Arc::new(RwLock::new(Render::black(size.clone())));
+        let (sender, receiver) = mpsc::channel();
 
         let app = Self {
-            render: None,
-            renderer_configuration,
-            last_render,
-            window_size: size.clone(),
+            render: ctx.load_texture(
+                "Render",
+                Render::black(size.clone()).to_color_image(),
+                Default::default(),
+            ),
+            render_receiver: receiver,
+            window_size: size,
             ray_tracer,
         };
 
-        app.start_rendering_thread();
+        app.start_rendering_thread(sender);
 
         app
     }
 
-    fn start_rendering_thread(&self) {
+    fn start_rendering_thread(&self, render_sender: Sender<Render>) {
         let ray_tracer = Arc::clone(&self.ray_tracer);
-        let last_render = Arc::clone(&self.last_render);
 
         std::thread::spawn(move || {
             loop {
-                let renderer = ray_tracer.read().unwrap();
+                let renderer = ray_tracer.lock().unwrap();
 
                 let render = renderer.render_image();
 
                 drop(renderer);
 
-                let mut last_render_lock = last_render.write().unwrap();
-                *last_render_lock = render;
-
-                drop(last_render_lock);
+                render_sender.send(render).unwrap();
 
                 std::thread::sleep(std::time::Duration::from_secs(1));
             }
@@ -59,16 +58,11 @@ impl RustTracerApplication {
     }
 
     fn try_update_render(&mut self, ctx: &Context) {
-        let new_image = self.last_render.read().unwrap();
-
-        self.render = Some(ctx.load_texture(
-            "Render",
-            new_image.to_color_image(),
-            Default::default(),
-        ));
+        if let Ok(render) = self.render_receiver.try_recv() {
+            self.render = ctx.load_texture("Render", render.to_color_image(), Default::default());
+        }
     }
 }
-
 
 impl eframe::App for RustTracerApplication {
     fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
@@ -80,9 +74,7 @@ impl eframe::App for RustTracerApplication {
             .default_width(self.window_size.get_width() as f32)
             .default_height(self.window_size.get_height() as f32)
             .show(ctx, |ui| {
-                if let Some(render) = self.render.as_mut() {
-                    ui.image((render.id(), ui.available_size()));
-                }
+                ui.image((self.render.id(), ui.available_size()));
             });
 
         egui::Window::new("Settings")
