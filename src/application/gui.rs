@@ -1,64 +1,37 @@
 use crate::Size;
 use crate::application::configuration::RendererConfiguration;
 use crate::application::renderer::Render;
+use crate::application::rendering_thread::RenderingThread;
 use crate::raytracer::RayTracer;
 use eframe::egui::{Context, TextureHandle};
 use eframe::{Frame, egui};
 use std::default::Default;
-use std::sync::mpsc::{Receiver, Sender};
-use std::sync::{Arc, Mutex, mpsc};
 
 pub struct RustTracerApplication {
     render: TextureHandle,
-    render_receiver: Receiver<Render>,
+    rendering_thread: RenderingThread,
     window_size: Size,
-    ray_tracer: Arc<Mutex<RayTracer>>,
 }
 
 impl RustTracerApplication {
     pub fn new(renderer_configuration: RendererConfiguration, ctx: &Context) -> Self {
         let size = renderer_configuration.size().clone();
 
-        let ray_tracer = Arc::new(Mutex::new(RayTracer::new(renderer_configuration)));
+        let renderer = RayTracer::new(renderer_configuration);
 
-        let (sender, receiver) = mpsc::channel();
-
-        let app = Self {
+        Self {
             render: ctx.load_texture(
                 "Render",
                 Render::black(size.clone()).to_color_image(),
                 Default::default(),
             ),
-            render_receiver: receiver,
+            rendering_thread: RenderingThread::new(renderer),
             window_size: size,
-            ray_tracer,
-        };
-
-        app.start_rendering_thread(sender);
-
-        app
-    }
-
-    fn start_rendering_thread(&self, render_sender: Sender<Render>) {
-        let ray_tracer = Arc::clone(&self.ray_tracer);
-
-        std::thread::spawn(move || {
-            loop {
-                let renderer = ray_tracer.lock().unwrap();
-
-                let render = renderer.render_image();
-
-                drop(renderer);
-
-                render_sender.send(render).unwrap();
-
-                std::thread::sleep(std::time::Duration::from_secs(1));
-            }
-        });
+        }
     }
 
     fn try_update_render(&mut self, ctx: &Context) {
-        if let Ok(render) = self.render_receiver.try_recv() {
+        if let Ok(render) = self.rendering_thread.try_recv_render() {
             self.render = ctx.load_texture("Render", render.to_color_image(), Default::default());
         }
     }

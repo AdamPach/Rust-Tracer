@@ -46,3 +46,7 @@ impl Render {
         )
     }
 }
+
+pub enum RendererCommand {
+    ChangeSize(Size),
+}
