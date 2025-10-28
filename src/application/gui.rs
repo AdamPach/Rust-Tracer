@@ -2,7 +2,7 @@ use crate::Size;
 use crate::application::configuration::RendererConfiguration;
 use crate::application::renderer::Render;
 use crate::application::rendering_thread::RenderingThread;
-use crate::raytracer::RayTracer;
+use crate::renderer::RayTracer;
 use eframe::egui::{Context, TextureHandle};
 use eframe::{Frame, egui};
 use std::default::Default;

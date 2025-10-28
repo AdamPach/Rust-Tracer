@@ -1,5 +1,6 @@
 mod application;
-mod raytracer;
+mod raytracing;
+mod renderer;
 
 pub use application::app::RustTracer;
 pub use application::configuration::{

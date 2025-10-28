@@ -1,5 +1,5 @@
 use crate::application::renderer::{Render, RendererCommand};
-use crate::raytracer::RayTracer;
+use crate::renderer::RayTracer;
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, SendError, Sender, TryRecvError};
 
