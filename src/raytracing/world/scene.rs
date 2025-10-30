@@ -2,7 +2,7 @@ use crate::raytracing::intersection::ray::Ray;
 use crate::raytracing::intersection::ray_hit::RayHit;
 use crate::raytracing::world::triangulated_mesh::TriangulatedMesh;
 
-struct Scene {
+pub struct Scene {
     objects: Vec<SceneObject>,
 }
 

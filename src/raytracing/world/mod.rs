@@ -1,2 +1,3 @@
-mod scene;
-mod triangulated_mesh;
+pub mod camera;
+pub mod scene;
+pub mod triangulated_mesh;

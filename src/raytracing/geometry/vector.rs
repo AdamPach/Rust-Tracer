@@ -1,4 +1,5 @@
 use crate::raytracing::geometry::coordinates::{X, Y, Z};
+use std::ops::Sub;
 
 pub struct Vector3 {
     x: X,
@@ -11,7 +12,7 @@ impl Vector3 {
         Self { x, y, z }
     }
 
-    pub fn norm(self) -> Self {
+    pub fn norm(&self) -> Self {
         let x = self.x.get();
         let y = self.y.get();
         let z = self.z.get();
@@ -34,6 +35,18 @@ impl Vector3 {
             x: X::new(self.y.get() * other.z.get() - self.z.get() * other.y.get()),
             y: Y::new(self.z.get() * other.x.get() - self.x.get() * other.z.get()),
             z: Z::new(self.x.get() * other.y.get() - self.y.get() * other.x.get()),
+        }
+    }
+}
+
+impl Sub for Vector3 {
+    type Output = Vector3;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Vector3 {
+            x: self.x - rhs.x,
+            y: self.y - rhs.y,
+            z: self.z - rhs.z,
         }
     }
 }

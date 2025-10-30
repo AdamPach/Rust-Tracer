@@ -1,14 +1,13 @@
 use crate::raytracing::geometry::barycentric::Barycentric;
 use crate::raytracing::geometry::coordinates::{U, V};
 use crate::raytracing::geometry::point::Point;
-use crate::raytracing::geometry::vector::Vector3;
 use crate::raytracing::intersection::hit::Hit;
 use crate::raytracing::intersection::ray::Ray;
 use crate::raytracing::intersection::ray_hit::RayHit;
 
 pub struct Triangle {
     points: [Point; 3],
-    normals: [Vector3; 3],
+    // normals: [Vector3; 3],
 }
 
 pub struct TriangulatedMesh {
@@ -47,8 +46,10 @@ impl TriangulatedMesh {
 }
 
 impl Triangle {
-    pub fn new(points: [Point; 3], normals: [Vector3; 3]) -> Self {
-        Self { points, normals }
+    pub fn new(points: [Point; 3] /*, normals: [Vector3; 3]*/) -> Self {
+        Self {
+            points, /*normals*/
+        }
     }
 
     pub fn intersect(&self, ray: &Ray) -> Option<Hit> {

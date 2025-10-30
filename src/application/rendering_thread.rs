@@ -22,7 +22,19 @@ impl RenderingThread {
     }
 
     pub fn try_recv_render(&mut self) -> Result<Render, TryRecvError> {
-        self.render_receiver.try_recv()
+        match self.render_receiver.try_recv() {
+            Ok(render) => {
+                let mut render = render;
+
+                while let Ok(new_render) = self.render_receiver.try_recv() {
+                    render = new_render;
+                }
+
+                Ok(render)
+            }
+            Err(TryRecvError::Empty) => Err(TryRecvError::Empty),
+            Err(TryRecvError::Disconnected) => panic!("render thread disconnected"),
+        }
     }
 
     pub fn send_command(
@@ -44,7 +56,7 @@ fn rendering_thread(
 
             render_sender.send(render).unwrap();
 
-            std::thread::sleep(std::time::Duration::from_secs(1));
+            //std::thread::sleep(std::time::Duration::from_secs(1));
         }
     });
 }
