@@ -1,4 +1,4 @@
-use crate::raytracing::geometry::coordinates::{X, Y, Z};
+use crate::raytracing::geometry::coordinates::{PixelX, PixelY, X, Y, Z};
 use crate::raytracing::geometry::matrix3x3::Matrix3x3;
 use crate::raytracing::geometry::point::Point;
 use crate::raytracing::geometry::vector::Vector3;
@@ -34,10 +34,10 @@ impl Camera {
         }
     }
 
-    pub fn generate_ray(&self, x: f64, y: f64) -> Ray {
+    pub fn generate_ray(&self, x: PixelX, y: PixelY) -> Ray {
         let origin = self.view_from;
 
-        let direction = self.get_direction_vector(x, y).norm();
+        let direction = self.get_direction_vector(x.get(), y.get()).norm();
 
         Ray::new(origin, direction, 0.0001)
     }

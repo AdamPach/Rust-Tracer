@@ -1,11 +1,12 @@
 use crate::Size;
 use crate::application::configuration::RendererConfiguration;
-use crate::application::renderer::Render;
+use crate::renderer::render::Render;
 use crate::application::rendering_thread::RenderingThread;
 use crate::renderer::RayTracer;
 use eframe::egui::{Context, TextureHandle};
 use eframe::{Frame, egui};
 use std::default::Default;
+use eframe::epaint::{ColorImage, ImageData};
 
 pub struct RustTracerApplication {
     render: TextureHandle,
@@ -22,7 +23,7 @@ impl RustTracerApplication {
         Self {
             render: ctx.load_texture(
                 "Render",
-                Render::black(size.clone()).to_color_image(),
+                Render::new(size.clone()),
                 Default::default(),
             ),
             rendering_thread: RenderingThread::new(renderer),
@@ -32,7 +33,7 @@ impl RustTracerApplication {
 
     fn try_update_render(&mut self, ctx: &Context) {
         if let Ok(render) = self.rendering_thread.try_recv_render() {
-            self.render = ctx.load_texture("Render", render.to_color_image(), Default::default());
+            self.render = ctx.load_texture("Render", render, Default::default());
         }
     }
 }
@@ -54,5 +55,16 @@ impl eframe::App for RustTracerApplication {
             .default_width(200.0)
             .resizable(false)
             .show(ctx, |_ui| {});
+    }
+}
+
+impl From<Render> for ImageData {
+    fn from(render: Render) -> Self {
+        let render_data = render.get_render_data();
+
+        ColorImage::from_rgba_unmultiplied(
+            [render_data.0.get_width(), render_data.0.get_height()],
+            &render_data.1,
+        ).into()
     }
 }

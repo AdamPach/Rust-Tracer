@@ -1,5 +1,5 @@
 use crate::RendererConfiguration;
-use crate::application::renderer::{RGBA, Render};
+use crate::renderer::render::{RGBA, Render};
 use crate::raytracing::geometry::coordinates::{X, Y, Z};
 use crate::raytracing::geometry::point::Point;
 use crate::raytracing::world::camera::Camera;
@@ -42,32 +42,30 @@ impl RayTracer {
     }
 
     pub fn render_image(&self) -> Render {
-        let size = self.configuration.size().clone();
+        let mut render = Render::new(self.configuration.size().clone());
 
-        let mut render = Render::new(size.clone());
+        while let Some(position) = render.next() {
+            let pixel_coords = position.get_pixel_coordinates();
 
-        for _h in 0..size.get_height() {
-            for _w in 0..size.get_width() {
-                let ray = self.camera.generate_ray(_w as f64, _h as f64);
+            let ray = self.camera.generate_ray(pixel_coords.0, pixel_coords.1);
 
-                let rgba = if self.scene.find_intersection(ray).is_some() {
-                    RGBA {
-                        r: 255,
-                        g: 0,
-                        b: 0,
-                        a: 255,
-                    }
-                } else {
-                    RGBA {
-                        r: 0,
-                        g: 0,
-                        b: 0,
-                        a: 255,
-                    }
-                };
+            let rgba = if self.scene.find_intersection(ray).is_some() {
+                RGBA {
+                    r: 255,
+                    g: 0,
+                    b: 0,
+                    a: 255,
+                }
+            } else {
+                RGBA {
+                    r: 0,
+                    g: 0,
+                    b: 0,
+                    a: 255,
+                }
+            };
 
-                render.add_pixel(rgba);
-            }
+            render.add_pixel(position.create_render_pixel(rgba));
         }
 
         render
