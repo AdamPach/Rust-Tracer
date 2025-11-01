@@ -1,4 +1,4 @@
-use crate::raytracing::geometry::coordinates::{X, Y, Z};
+use crate::core::geometry::coordinates::{X, Y, Z};
 use std::ops::Sub;
 
 pub struct Vector3 {

@@ -1,4 +1,4 @@
-use crate::raytracing::geometry::barycentric::Barycentric;
+use crate::core::geometry::barycentric::Barycentric;
 use crate::raytracing::intersection::ray_hit::RayHit;
 
 pub struct Hit {

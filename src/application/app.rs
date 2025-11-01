@@ -1,5 +1,5 @@
-use crate::application::configuration::RustTracerConfiguration;
 use crate::application::gui::RustTracerApplication;
+use crate::core::configuration::RustTracerConfiguration;
 use eframe::{NativeOptions, egui};
 
 pub struct RustTracer {
@@ -12,7 +12,7 @@ impl RustTracer {
         RustTracer {
             options: NativeOptions {
                 viewport: egui::ViewportBuilder::default()
-                    .with_inner_size(configuration.size().get_size()),
+                    .with_inner_size(configuration.window_size().get_size()),
                 ..Default::default()
             },
             configuration,
@@ -25,7 +25,7 @@ impl RustTracer {
             self.options,
             Box::new(|cc| {
                 Ok(Box::<RustTracerApplication>::new(
-                    RustTracerApplication::new(self.configuration.into(), &cc.egui_ctx),
+                    RustTracerApplication::new(self.configuration, &cc.egui_ctx),
                 ))
             }),
         )

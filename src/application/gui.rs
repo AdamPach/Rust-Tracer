@@ -1,33 +1,32 @@
-use crate::Size;
-use crate::application::configuration::RendererConfiguration;
-use crate::renderer::render::Render;
 use crate::application::rendering_thread::RenderingThread;
-use crate::renderer::RayTracer;
+use crate::core::configuration::RendererState;
+use crate::core::render::Render;
+use crate::renderer::raytracer::RayTracer;
 use eframe::egui::{Context, TextureHandle};
+use eframe::epaint::{ColorImage, ImageData};
 use eframe::{Frame, egui};
 use std::default::Default;
-use eframe::epaint::{ColorImage, ImageData};
 
 pub struct RustTracerApplication {
     render: TextureHandle,
     rendering_thread: RenderingThread,
-    window_size: Size,
+    state: RendererState,
 }
 
 impl RustTracerApplication {
-    pub fn new(renderer_configuration: RendererConfiguration, ctx: &Context) -> Self {
-        let size = renderer_configuration.size().clone();
+    pub fn new(into_state: impl Into<RendererState>, ctx: &Context) -> Self {
+        let state: RendererState = into_state.into();
 
-        let renderer = RayTracer::new(renderer_configuration);
+        let renderer = RayTracer::new(state.clone());
 
         Self {
             render: ctx.load_texture(
                 "Render",
-                Render::new(size.clone()),
+                Render::new(state.render_size().clone()),
                 Default::default(),
             ),
             rendering_thread: RenderingThread::new(renderer),
-            window_size: size,
+            state,
         }
     }
 
@@ -45,8 +44,8 @@ impl eframe::App for RustTracerApplication {
         ctx.request_repaint_after(std::time::Duration::from_millis(16));
 
         egui::Window::new("Render")
-            .default_width(self.window_size.get_width() as f32)
-            .default_height(self.window_size.get_height() as f32)
+            .default_width(self.state.render_size().get_width().into())
+            .default_height(self.state.render_size().get_height().into())
             .show(ctx, |ui| {
                 ui.image((self.render.id(), ui.available_size()));
             });
@@ -63,8 +62,12 @@ impl From<Render> for ImageData {
         let render_data = render.get_render_data();
 
         ColorImage::from_rgba_unmultiplied(
-            [render_data.0.get_width(), render_data.0.get_height()],
+            [
+                render_data.0.get_width().get(),
+                render_data.0.get_height().get(),
+            ],
             &render_data.1,
-        ).into()
+        )
+        .into()
     }
 }

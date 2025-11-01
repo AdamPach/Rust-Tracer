@@ -88,27 +88,3 @@ impl V {
         self.0
     }
 }
-
-pub struct PixelX(f64);
-
-pub struct PixelY(f64);
-
-impl PixelX {
-    pub fn new(x: f64) -> Self {
-        Self(x)
-    }
-
-    pub fn get(&self) -> f64 {
-        self.0
-    }
-}
-
-impl PixelY {
-    pub fn new(y: f64) -> Self {
-        Self(y)
-    }
-
-    pub fn get(&self) -> f64 {
-        self.0
-    }
-}

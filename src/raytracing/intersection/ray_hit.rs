@@ -1,4 +1,4 @@
-use crate::raytracing::geometry::barycentric::Barycentric;
+use crate::core::geometry::barycentric::Barycentric;
 
 pub struct RayHit {
     barycentric: Barycentric,

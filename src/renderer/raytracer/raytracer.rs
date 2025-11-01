@@ -1,19 +1,20 @@
-use crate::RendererConfiguration;
-use crate::renderer::render::{RGBA, Render};
-use crate::raytracing::geometry::coordinates::{X, Y, Z};
-use crate::raytracing::geometry::point::Point;
+use crate::core::configuration::RendererState;
+use crate::core::geometry::coordinates::{X, Y, Z};
+use crate::core::geometry::point::Point;
+use crate::core::render::{ColorRGBA, Render, A, B, G, R};
 use crate::raytracing::world::camera::Camera;
 use crate::raytracing::world::scene::{Scene, SceneObject};
 use crate::raytracing::world::triangulated_mesh::{Triangle, TriangulatedMesh};
+use crate::renderer::raytracer::raytracer_configuration::RayTracerConfiguration;
 
 pub struct RayTracer {
-    configuration: RendererConfiguration,
+    configuration: RayTracerConfiguration,
     scene: Scene,
     camera: Camera,
 }
 
 impl RayTracer {
-    pub fn new(configuration: RendererConfiguration) -> Self {
+    pub fn new(state: RendererState) -> Self {
         let p1 = Point::new(X::new(-0.5), Y::new(-0.5), Z::new(0.5));
         let p2 = Point::new(X::new(0.5), Y::new(-0.5), Z::new(0.5));
         let p3 = Point::new(X::new(0.5), Y::new(0.5), Z::new(0.5));
@@ -27,6 +28,8 @@ impl RayTracer {
         scene.add_object(SceneObject::TriangulatedMesh(TriangulatedMesh::new(vec![
             t1, t2,
         ])));
+
+        let configuration: RayTracerConfiguration = state.into();
 
         let camera = Camera::new(
             configuration.size().get_width(),
@@ -50,19 +53,9 @@ impl RayTracer {
             let ray = self.camera.generate_ray(pixel_coords.0, pixel_coords.1);
 
             let rgba = if self.scene.find_intersection(ray).is_some() {
-                RGBA {
-                    r: 255,
-                    g: 0,
-                    b: 0,
-                    a: 255,
-                }
+                ColorRGBA::new(R::new(255), G::new(0), B::new(0), A::new(255))
             } else {
-                RGBA {
-                    r: 0,
-                    g: 0,
-                    b: 0,
-                    a: 255,
-                }
+                ColorRGBA::new(R::new(0), G::new(0), B::new(0), A::new(255))
             };
 
             render.add_pixel(position.create_render_pixel(rgba));

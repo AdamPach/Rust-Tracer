@@ -1,5 +1,5 @@
-use crate::raytracing::geometry::coordinates::{X, Y, Z};
-use crate::raytracing::geometry::vector::Vector3;
+use crate::core::geometry::coordinates::{X, Y, Z};
+use crate::core::geometry::vector::Vector3;
 
 pub struct Matrix3x3 {
     data: [Vector3; 3],

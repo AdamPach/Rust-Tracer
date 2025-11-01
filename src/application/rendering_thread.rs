@@ -1,5 +1,5 @@
-use crate::renderer::render::{Render};
-use crate::renderer::RayTracer;
+use crate::core::render::Render;
+use crate::renderer::raytracer::RayTracer;
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender, TryRecvError};
 
@@ -35,10 +35,7 @@ impl RenderingThread {
     }
 }
 
-fn rendering_thread(
-    renderer: RayTracer,
-    render_sender: Sender<Render>,
-) {
+fn rendering_thread(renderer: RayTracer, render_sender: Sender<Render>) {
     std::thread::spawn(move || {
         loop {
             let render = renderer.render_image();

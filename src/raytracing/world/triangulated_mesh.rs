@@ -1,6 +1,6 @@
-use crate::raytracing::geometry::barycentric::Barycentric;
-use crate::raytracing::geometry::coordinates::{U, V};
-use crate::raytracing::geometry::point::Point;
+use crate::core::geometry::barycentric::Barycentric;
+use crate::core::geometry::coordinates::{U, V};
+use crate::core::geometry::point::Point;
 use crate::raytracing::intersection::hit::Hit;
 use crate::raytracing::intersection::ray::Ray;
 use crate::raytracing::intersection::ray_hit::RayHit;

@@ -1,5 +1,5 @@
-use crate::raytracing::geometry::point::Point;
-use crate::raytracing::geometry::vector::Vector3;
+use crate::core::geometry::point::Point;
+use crate::core::geometry::vector::Vector3;
 
 pub struct Ray {
     origin: Point,

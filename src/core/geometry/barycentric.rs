@@ -1,4 +1,4 @@
-use crate::raytracing::geometry::coordinates::{U, V};
+use crate::core::geometry::coordinates::{U, V};
 
 pub struct Barycentric {
     u: U,

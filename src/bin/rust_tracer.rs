@@ -1,12 +1,12 @@
 use rust_tracer::{
-    Height, RendererConfiguration, RustTracer, RustTracerConfiguration, Size, Width,
+    Height, RenderSize, RustTracer, RustTracerConfiguration, Size, Width, WindowSize,
 };
 
 fn main() -> Result<(), eframe::Error> {
-    let renderer_config = RendererConfiguration::new(Size::new(Width(720), Height(480)));
-
-    let configuration =
-        RustTracerConfiguration::new(Size::new(Width(1200), Height(600)), renderer_config);
+    let configuration = RustTracerConfiguration::new(
+        WindowSize::new(Size::new(Width::new(1200), Height::new(600))),
+        RenderSize::new(Size::new(Width::new(720), Height::new(480))),
+    );
 
     let rust_tracer = RustTracer::new(configuration);
 
