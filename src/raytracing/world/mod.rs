@@ -1,3 +1,5 @@
-pub mod camera;
-pub mod scene;
-pub mod triangulated_mesh;
+mod camera;
+mod scene;
+
+pub use camera::Camera;
+pub use scene::{Scene, SceneObject};

@@ -1,23 +1,18 @@
-use crate::core::render::color::ColorRGBA;
-use crate::core::render::pixels::{PixelX, PixelY};
 use crate::Width;
+use crate::core::render::pixels::{PixelX, PixelY};
+use crate::core::render::rgba::RGBA;
 
 pub struct RenderPixel {
-    color: ColorRGBA,
+    color: RGBA,
     position: PixelPosition,
 }
 
 impl RenderPixel {
-    pub fn position(&self) -> &PixelPosition {
-        &self.position
+    pub fn color(self) -> RGBA {
+        self.color
     }
 
-    pub fn color(&self) -> &ColorRGBA {
-        &self.color
-    }
-    
-    pub fn index(&self, width: &Width) -> usize
-    {
+    pub fn index(&self, width: &Width) -> usize {
         self.position.x + self.position.y * width.get()
     }
 }
@@ -32,9 +27,9 @@ impl PixelPosition {
         Self { x, y }
     }
 
-    pub fn create_render_pixel(self, color: ColorRGBA) -> RenderPixel {
+    pub fn create_render_pixel(self, color: impl Into<RGBA>) -> RenderPixel {
         RenderPixel {
-            color,
+            color: color.into(),
             position: self,
         }
     }

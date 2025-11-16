@@ -1,3 +1,5 @@
-pub mod hit;
-pub mod ray;
-pub mod ray_hit;
+mod ray;
+mod ray_hit;
+
+pub use ray::Ray;
+pub use ray_hit::RayHit;

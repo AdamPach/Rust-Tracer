@@ -1,10 +1,12 @@
 use crate::core::configuration::RendererState;
 use crate::core::geometry::coordinates::{X, Y, Z};
 use crate::core::geometry::point::Point;
-use crate::core::render::{ColorRGBA, Render, A, B, G, R};
-use crate::raytracing::world::camera::Camera;
-use crate::raytracing::world::scene::{Scene, SceneObject};
-use crate::raytracing::world::triangulated_mesh::{Triangle, TriangulatedMesh};
+use crate::core::render::Render;
+use crate::raytracing::object::material::ambient::Ambient;
+use crate::raytracing::object::material::color::{A, B, Color, G, R};
+use crate::raytracing::object::shader::Shader;
+use crate::raytracing::object::{TriangleData, TriangulatedMeshBuilder};
+use crate::raytracing::world::{Camera, Scene, SceneObject};
 use crate::renderer::raytracer::raytracer_configuration::RayTracerConfiguration;
 
 pub struct RayTracer {
@@ -20,14 +22,20 @@ impl RayTracer {
         let p3 = Point::new(X::new(0.5), Y::new(0.5), Z::new(0.5));
         let p4 = Point::new(X::new(-0.5), Y::new(0.5), Z::new(0.5));
 
-        let t1 = Triangle::new([p1, p2, p3]);
-        let t2 = Triangle::new([p1, p3, p4]);
-
         let mut scene = Scene::new();
 
-        scene.add_object(SceneObject::TriangulatedMesh(TriangulatedMesh::new(vec![
-            t1, t2,
-        ])));
+        let material = scene.add_material(Ambient::new(Color::new(
+            R::new(0.05),
+            G::new(0.95),
+            B::new(0.05),
+            A::new(1.0),
+        )));
+
+        let mesh_builder = TriangulatedMeshBuilder::new(material)
+            .add_triangle(TriangleData::new([p1, p2, p3]))
+            .add_triangle(TriangleData::new([p1, p3, p4]));
+
+        scene.add_object(SceneObject::TriangulatedMesh(mesh_builder.build()));
 
         let configuration: RayTracerConfiguration = state.into();
 
@@ -52,13 +60,17 @@ impl RayTracer {
 
             let ray = self.camera.generate_ray(pixel_coords.0, pixel_coords.1);
 
-            let rgba = if self.scene.find_intersection(ray).is_some() {
-                ColorRGBA::new(R::new(255), G::new(0), B::new(0), A::new(255))
-            } else {
-                ColorRGBA::new(R::new(0), G::new(0), B::new(0), A::new(255))
+            let color = match self.scene.find_intersection(ray) {
+                Some(hit) => self
+                    .scene
+                    .get_material(hit.material_id())
+                    .unwrap()
+                    .shader()
+                    .shade(hit),
+                None => Color::new(R::new(0.05), G::new(0.05), B::new(0.05), A::new(1.0)),
             };
 
-            render.add_pixel(position.create_render_pixel(rgba));
+            render.add_pixel(position.create_render_pixel(color));
         }
 
         render

@@ -23,10 +23,12 @@ impl Render {
     pub fn add_pixel(&mut self, pixel: RenderPixel) {
         let index = 4 * pixel.index(&self.size.get_width());
 
-        self.pixels_rgba[index] = pixel.color().r();
-        self.pixels_rgba[index + 1] = pixel.color().g();
-        self.pixels_rgba[index + 2] = pixel.color().b();
-        self.pixels_rgba[index + 3] = pixel.color().a();
+        let color = pixel.color();
+
+        self.pixels_rgba[index] = color.r();
+        self.pixels_rgba[index + 1] = color.g();
+        self.pixels_rgba[index + 2] = color.b();
+        self.pixels_rgba[index + 3] = color.a();
     }
 
     pub fn get_render_data(self) -> (Size, Vec<u8>) {
@@ -42,10 +44,7 @@ impl Iterator for Render {
             return None;
         }
 
-        let current_position = PixelPosition::new(
-            self.x_pos,
-            self.y_pos,
-        );
+        let current_position = PixelPosition::new(self.x_pos, self.y_pos);
 
         self.x_pos += 1;
 

@@ -22,11 +22,11 @@ impl Size {
     }
 
     pub fn get_width(&self) -> Width {
-        self.width.clone()
+        self.width
     }
 
     pub fn get_height(&self) -> Height {
-        self.height.clone()
+        self.height
     }
 }
 
@@ -35,7 +35,7 @@ impl Width {
         Width(width)
     }
 
-    pub fn get(&self) -> usize {
+    pub fn get(self) -> usize {
         self.0
     }
 }
@@ -45,7 +45,7 @@ impl Height {
         Height(height)
     }
 
-    pub fn get(&self) -> usize {
+    pub fn get(self) -> usize {
         self.0
     }
 }

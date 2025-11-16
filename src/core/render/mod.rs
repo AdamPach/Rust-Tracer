@@ -1,9 +1,9 @@
-mod color;
 mod pixels;
 mod render;
 mod render_pixel;
+mod rgba;
 
 pub use render::Render;
 
-pub use color::{ColorRGBA, R, G, B, A};
 pub use pixels::{PixelX, PixelY};
+pub use rgba::RGBA;

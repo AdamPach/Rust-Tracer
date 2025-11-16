@@ -14,7 +14,7 @@ impl X {
         Self(x)
     }
 
-    pub fn get(&self) -> f64 {
+    pub fn get(self) -> f64 {
         self.0
     }
 }
@@ -32,7 +32,7 @@ impl Y {
         Self(y)
     }
 
-    pub fn get(&self) -> f64 {
+    pub fn get(self) -> f64 {
         self.0
     }
 }
@@ -50,7 +50,7 @@ impl Z {
         Self(z)
     }
 
-    pub fn get(&self) -> f64 {
+    pub fn get(self) -> f64 {
         self.0
     }
 }
@@ -74,7 +74,7 @@ impl U {
         Self(u)
     }
 
-    pub fn get(&self) -> f64 {
+    pub fn get(self) -> f64 {
         self.0
     }
 }
@@ -84,7 +84,7 @@ impl V {
         Self(v)
     }
 
-    pub fn get(&self) -> f64 {
+    pub fn get(self) -> f64 {
         self.0
     }
 }

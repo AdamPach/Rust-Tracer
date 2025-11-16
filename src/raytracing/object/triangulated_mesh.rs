@@ -1,24 +1,15 @@
 use crate::core::geometry::barycentric::Barycentric;
 use crate::core::geometry::coordinates::{U, V};
 use crate::core::geometry::point::Point;
-use crate::raytracing::intersection::hit::Hit;
-use crate::raytracing::intersection::ray::Ray;
-use crate::raytracing::intersection::ray_hit::RayHit;
-
-pub struct Triangle {
-    points: [Point; 3],
-    // normals: [Vector3; 3],
-}
+use crate::raytracing::intersection::Ray;
+use crate::raytracing::intersection::RayHit;
+use crate::raytracing::shading::MaterialId;
 
 pub struct TriangulatedMesh {
     triangles: Vec<Triangle>,
 }
 
 impl TriangulatedMesh {
-    pub fn new(triangles: Vec<Triangle>) -> Self {
-        Self { triangles }
-    }
-
     pub fn intersect(&self, ray: &Ray) -> Option<RayHit> {
         let mut intersection: Option<RayHit> = None;
 
@@ -29,7 +20,7 @@ impl TriangulatedMesh {
             };
 
             let Some(ray_hit) = intersection else {
-                intersection = Some(hit.into_ray_hit());
+                intersection = Some(hit);
                 continue;
             };
 
@@ -38,21 +29,21 @@ impl TriangulatedMesh {
                 continue;
             }
 
-            intersection = Some(hit.into_ray_hit());
+            intersection = Some(hit);
         }
 
         intersection
     }
 }
 
-impl Triangle {
-    pub fn new(points: [Point; 3] /*, normals: [Vector3; 3]*/) -> Self {
-        Self {
-            points, /*normals*/
-        }
-    }
+struct Triangle {
+    points: [Point; 3],
+    material_id: MaterialId,
+    // normals: [Vector3; 3],
+}
 
-    pub fn intersect(&self, ray: &Ray) -> Option<Hit> {
+impl Triangle {
+    pub fn intersect(&self, ray: &Ray) -> Option<RayHit> {
         let e1 = self.points[1] - self.points[0];
         let e2 = self.points[2] - self.points[0];
 
@@ -86,6 +77,45 @@ impl Triangle {
 
         let barycentric = Barycentric::new(u, v);
 
-        Some(Hit::new(barycentric, distance))
+        Some(RayHit::new(barycentric, self.material_id, distance))
+    }
+}
+
+pub struct TriangleData {
+    points: [Point; 3],
+}
+
+impl TriangleData {
+    pub fn new(points: [Point; 3]) -> Self {
+        Self { points }
+    }
+}
+
+pub struct TriangulatedMeshBuilder {
+    triangles: Vec<Triangle>,
+    material_id: MaterialId,
+}
+
+impl TriangulatedMeshBuilder {
+    pub fn new(material_id: MaterialId) -> Self {
+        Self {
+            material_id,
+            triangles: Vec::new(),
+        }
+    }
+
+    pub fn add_triangle(mut self, triangle: TriangleData) -> Self {
+        self.triangles.push(Triangle {
+            points: triangle.points,
+            material_id: self.material_id,
+        });
+
+        self
+    }
+
+    pub fn build(self) -> TriangulatedMesh {
+        TriangulatedMesh {
+            triangles: self.triangles,
+        }
     }
 }

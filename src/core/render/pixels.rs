@@ -11,7 +11,7 @@ impl PixelX {
         Self(x)
     }
 
-    pub fn get(&self) -> f64 {
+    pub fn get(self) -> f64 {
         self.0
     }
 }
@@ -29,7 +29,7 @@ impl PixelY {
         Self(y)
     }
 
-    pub fn get(&self) -> f64 {
+    pub fn get(self) -> f64 {
         self.0
     }
 }
