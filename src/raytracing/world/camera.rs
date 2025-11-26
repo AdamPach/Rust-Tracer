@@ -4,7 +4,7 @@ use crate::core::geometry::matrix3x3::Matrix3x3;
 use crate::core::geometry::point::Point;
 use crate::core::geometry::vector::Vector3;
 use crate::core::render::{PixelX, PixelY};
-use crate::raytracing::intersection::Ray;
+use crate::raytracing::intersection::ray::Ray;
 
 pub struct Camera {
     width: Width,

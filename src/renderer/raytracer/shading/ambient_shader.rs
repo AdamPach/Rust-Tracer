@@ -1,14 +1,14 @@
-use crate::raytracing::intersection::RayHit;
-use crate::raytracing::object::material::ambient::Ambient;
+use crate::raytracing::RayHit;
+use crate::raytracing::object::material::ambient::AmbientMaterial;
 use crate::raytracing::object::material::color::Color;
 use crate::raytracing::object::shader::Shader;
 
 pub struct AmbientShader {
-    material: Ambient,
+    material: AmbientMaterial,
 }
 
 impl AmbientShader {
-    pub fn new(material: Ambient) -> AmbientShader {
+    pub fn new(material: AmbientMaterial) -> AmbientShader {
         AmbientShader { material }
     }
 }

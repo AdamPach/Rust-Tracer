@@ -1,4 +1,5 @@
 mod intersection;
 pub mod object;
-mod shading;
 pub mod world;
+
+pub use intersection::ray_hit::RayHit;

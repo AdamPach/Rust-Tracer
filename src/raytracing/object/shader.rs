@@ -1,4 +1,4 @@
-use crate::raytracing::intersection::RayHit;
+use crate::raytracing::intersection::ray_hit::RayHit;
 use crate::raytracing::object::material::color::Color;
 
 pub trait Shader {

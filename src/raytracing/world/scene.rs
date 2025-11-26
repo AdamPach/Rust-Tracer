@@ -1,12 +1,12 @@
-use crate::raytracing::intersection::Ray;
-use crate::raytracing::intersection::RayHit;
+use crate::raytracing::intersection::ray::Ray;
+use crate::raytracing::intersection::ray_hit::RayHit;
 use crate::raytracing::object::TriangulatedMesh;
-use crate::raytracing::shading::{Material, MaterialId};
+use crate::raytracing::object::material::material_type::{MaterialType, MaterialTypeId};
 use std::collections::HashMap;
 
 pub struct Scene {
     objects: Vec<SceneObject>,
-    materials: HashMap<MaterialId, Material>,
+    materials: HashMap<MaterialTypeId, MaterialType>,
 }
 
 pub enum SceneObject {
@@ -25,13 +25,13 @@ impl Scene {
         self.objects.push(object);
     }
 
-    pub fn add_material(&mut self, material: impl Into<Material>) -> MaterialId {
-        let id = MaterialId::new(self.objects.len() as i32);
+    pub fn add_material(&mut self, material: impl Into<MaterialType>) -> MaterialTypeId {
+        let id = MaterialTypeId::new(self.materials.len() as i32);
         self.materials.insert(id, material.into());
         id
     }
 
-    pub fn get_material(&self, material: MaterialId) -> Option<&Material> {
+    pub fn get_material(&self, material: MaterialTypeId) -> Option<&MaterialType> {
         self.materials.get(&material)
     }
 
@@ -39,7 +39,7 @@ impl Scene {
         let mut intersection: Option<RayHit> = None;
 
         for object in &self.objects {
-            let ray_hit = match object {
+            let hit = match object {
                 SceneObject::TriangulatedMesh(m) => match m.intersect(&ray) {
                     Some(hit) => hit,
                     None => continue,
@@ -47,16 +47,16 @@ impl Scene {
             };
 
             let Some(nearest_ray_hit) = intersection else {
-                intersection = Some(ray_hit);
+                intersection = Some(hit.ray_hit());
                 continue;
             };
 
-            if nearest_ray_hit.distance() < ray_hit.distance() {
+            if nearest_ray_hit.distance() < hit.distance() {
                 intersection = Some(nearest_ray_hit);
                 continue;
             }
 
-            intersection = Some(ray_hit);
+            intersection = Some(hit.ray_hit());
         }
 
         intersection

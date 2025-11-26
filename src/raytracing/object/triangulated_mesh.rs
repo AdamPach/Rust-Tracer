@@ -1,17 +1,17 @@
 use crate::core::geometry::barycentric::Barycentric;
 use crate::core::geometry::coordinates::{U, V};
 use crate::core::geometry::point::Point;
-use crate::raytracing::intersection::Ray;
-use crate::raytracing::intersection::RayHit;
-use crate::raytracing::shading::MaterialId;
+use crate::raytracing::intersection::ray::Ray;
+use crate::raytracing::intersection::ray_hit::Hit;
+use crate::raytracing::object::material::material_type::MaterialTypeId;
 
 pub struct TriangulatedMesh {
     triangles: Vec<Triangle>,
 }
 
 impl TriangulatedMesh {
-    pub fn intersect(&self, ray: &Ray) -> Option<RayHit> {
-        let mut intersection: Option<RayHit> = None;
+    pub fn intersect(&self, ray: &Ray) -> Option<Hit> {
+        let mut intersection: Option<Hit> = None;
 
         for triangle in &self.triangles {
             let hit = match triangle.intersect(ray) {
@@ -38,12 +38,12 @@ impl TriangulatedMesh {
 
 struct Triangle {
     points: [Point; 3],
-    material_id: MaterialId,
+    material_id: MaterialTypeId,
     // normals: [Vector3; 3],
 }
 
 impl Triangle {
-    pub fn intersect(&self, ray: &Ray) -> Option<RayHit> {
+    pub fn intersect(&self, ray: &Ray) -> Option<Hit> {
         let e1 = self.points[1] - self.points[0];
         let e2 = self.points[2] - self.points[0];
 
@@ -77,7 +77,7 @@ impl Triangle {
 
         let barycentric = Barycentric::new(u, v);
 
-        Some(RayHit::new(barycentric, self.material_id, distance))
+        Some(Hit::new(barycentric, self.material_id, distance))
     }
 }
 
@@ -93,11 +93,11 @@ impl TriangleData {
 
 pub struct TriangulatedMeshBuilder {
     triangles: Vec<Triangle>,
-    material_id: MaterialId,
+    material_id: MaterialTypeId,
 }
 
 impl TriangulatedMeshBuilder {
-    pub fn new(material_id: MaterialId) -> Self {
+    pub fn new(material_id: MaterialTypeId) -> Self {
         Self {
             material_id,
             triangles: Vec::new(),
