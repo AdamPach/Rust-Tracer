@@ -1,10 +1,10 @@
+use crate::renderer::raytracer::shading::shaders::Shader;
 use crate::core::configuration::RendererState;
 use crate::core::geometry::coordinates::{X, Y, Z};
 use crate::core::geometry::point::Point;
 use crate::core::render::{PixelX, PixelY, Render};
 use crate::raytracing::object::material::ambient::AmbientMaterialBuilder;
 use crate::raytracing::object::material::color::{A, B, Color, G, R};
-use crate::raytracing::object::shader::Shader;
 use crate::raytracing::object::{TriangleData, TriangulatedMeshBuilder};
 use crate::raytracing::world::{Camera, Scene, SceneObject};
 use crate::renderer::raytracer::raytracer_configuration::RayTracerConfiguration;

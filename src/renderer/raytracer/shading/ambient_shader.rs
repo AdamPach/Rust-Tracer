@@ -1,7 +1,7 @@
 use crate::raytracing::RayHit;
 use crate::raytracing::object::material::ambient::AmbientMaterial;
 use crate::raytracing::object::material::color::Color;
-use crate::raytracing::object::shader::Shader;
+use crate::renderer::raytracer::shading::shaders::Shader;
 
 pub struct AmbientShader {
     material: AmbientMaterial,
