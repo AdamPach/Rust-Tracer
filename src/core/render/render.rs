@@ -1,5 +1,5 @@
-use crate::Size;
-use crate::core::render::render_pixel::{PixelPosition, RenderPixel};
+use crate::core::render::{PixelX, PixelY, RGBA};
+use crate::{Size, Width};
 
 pub struct Render {
     size: Size,
@@ -44,7 +44,10 @@ impl Iterator for Render {
             return None;
         }
 
-        let current_position = PixelPosition::new(self.x_pos, self.y_pos);
+        let current_position = PixelPosition {
+            x: self.x_pos,
+            y: self.y_pos,
+        };
 
         self.x_pos += 1;
 
@@ -54,5 +57,37 @@ impl Iterator for Render {
         }
 
         Some(current_position)
+    }
+}
+
+pub struct RenderPixel {
+    color: RGBA,
+    position: PixelPosition,
+}
+
+impl RenderPixel {
+    pub fn color(self) -> RGBA {
+        self.color
+    }
+
+    pub fn index(&self, width: &Width) -> usize {
+        self.position.x + self.position.y * width.get()
+    }
+}
+
+pub struct PixelPosition {
+    x: usize,
+    y: usize,
+}
+
+impl PixelPosition {
+    pub fn create_render_pixel(self, color: impl Into<RGBA>) -> RenderPixel {
+        RenderPixel {
+            color: color.into(),
+            position: self,
+        }
+    }
+    pub fn get_pixel_coordinates(&self) -> (PixelX, PixelY) {
+        (PixelX::new(self.x as f64), PixelY::new(self.y as f64))
     }
 }

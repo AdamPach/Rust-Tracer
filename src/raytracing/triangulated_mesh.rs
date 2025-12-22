@@ -1,8 +1,8 @@
 use crate::core::geometry::barycentric::Barycentric;
 use crate::core::geometry::coordinates::{U, V};
 use crate::core::geometry::point::Point;
-use crate::raytracing::intersection::Ray;
 use crate::raytracing::intersection::Hit;
+use crate::raytracing::intersection::Ray;
 use crate::raytracing::material::MaterialTypeId;
 use crate::raytracing::scene::SceneObject;
 
@@ -50,7 +50,7 @@ impl Triangle {
 
 struct TriangleData {
     triangle: Triangle,
-    material_id: MaterialTypeId
+    material_id: MaterialTypeId,
 }
 
 impl TriangleData {

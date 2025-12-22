@@ -1,7 +1,6 @@
 use crate::core::render::Render;
 use crate::renderer::raytracer::RayTracer;
-use std::sync::mpsc;
-use std::sync::mpsc::{Receiver, Sender, TryRecvError};
+use std::sync::mpsc::{Receiver, Sender, TryRecvError, channel};
 
 pub struct RenderingThread {
     render_receiver: Receiver<Render>,
@@ -9,7 +8,7 @@ pub struct RenderingThread {
 
 impl RenderingThread {
     pub fn new(renderer: RayTracer) -> Self {
-        let renderer_channel = mpsc::channel();
+        let renderer_channel = channel();
 
         rendering_thread(renderer, renderer_channel.0);
 

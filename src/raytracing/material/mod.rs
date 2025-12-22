@@ -1,4 +1,4 @@
-use crate::raytracing::material::ambient::{AmbientMaterial};
+use crate::raytracing::material::ambient::AmbientMaterial;
 
 pub mod ambient;
 pub mod color;

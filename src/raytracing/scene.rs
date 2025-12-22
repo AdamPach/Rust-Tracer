@@ -1,8 +1,8 @@
 use crate::raytracing::intersection::Ray;
 use crate::raytracing::intersection::RayHit;
-use std::collections::HashMap;
 use crate::raytracing::material::{MaterialType, MaterialTypeId};
 use crate::raytracing::triangulated_mesh::TriangulatedMesh;
+use std::collections::HashMap;
 
 pub enum SceneObject {
     TriangulatedMesh(TriangulatedMesh),
