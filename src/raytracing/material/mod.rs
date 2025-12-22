@@ -1,4 +1,7 @@
-use crate::raytracing::object::material::ambient::AmbientMaterial;
+use crate::raytracing::material::ambient::{AmbientMaterial};
+
+pub mod ambient;
+pub mod color;
 
 #[derive(Copy, Clone, Hash, Eq, PartialEq)]
 pub struct MaterialTypeId(i32);

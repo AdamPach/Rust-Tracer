@@ -1,20 +1,20 @@
 use crate::core::render::RGBA;
 
 #[derive(Clone)]
-pub struct Color {
+pub struct MaterialColor {
     r: R,
     g: G,
     b: B,
     a: A,
 }
 
-impl Color {
-    pub fn new(r: R, g: G, b: B, a: A) -> Color {
-        Color { r, g, b, a }
+impl MaterialColor {
+    pub fn new(r: R, g: G, b: B, a: A) -> Self {
+        Self { r, g, b, a }
     }
 }
 
-impl Into<RGBA> for Color {
+impl Into<RGBA> for MaterialColor {
     fn into(self) -> RGBA {
         RGBA::new(
             (self.r.0.clamp(0.0, 1.0) * 255.0) as u8,

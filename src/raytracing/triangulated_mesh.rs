@@ -1,12 +1,13 @@
 use crate::core::geometry::barycentric::Barycentric;
 use crate::core::geometry::coordinates::{U, V};
 use crate::core::geometry::point::Point;
-use crate::raytracing::intersection::ray::Ray;
-use crate::raytracing::intersection::ray_hit::Hit;
-use crate::raytracing::object::material::material_type::MaterialTypeId;
+use crate::raytracing::intersection::Ray;
+use crate::raytracing::intersection::Hit;
+use crate::raytracing::material::MaterialTypeId;
+use crate::raytracing::scene::SceneObject;
 
 pub struct TriangulatedMesh {
-    triangles: Vec<Triangle>,
+    triangles: Vec<TriangleData>,
 }
 
 impl TriangulatedMesh {
@@ -36,16 +37,26 @@ impl TriangulatedMesh {
     }
 }
 
-struct Triangle {
+pub struct Triangle {
     points: [Point; 3],
-    material_id: MaterialTypeId,
     // normals: [Vector3; 3],
 }
 
 impl Triangle {
+    pub fn new(points: [Point; 3]) -> Self {
+        Self { points }
+    }
+}
+
+struct TriangleData {
+    triangle: Triangle,
+    material_id: MaterialTypeId
+}
+
+impl TriangleData {
     pub fn intersect(&self, ray: &Ray) -> Option<Hit> {
-        let e1 = self.points[1] - self.points[0];
-        let e2 = self.points[2] - self.points[0];
+        let e1 = self.triangle.points[1] - self.triangle.points[0];
+        let e2 = self.triangle.points[2] - self.triangle.points[0];
 
         let p = ray.direction().cross(&e2);
 
@@ -57,7 +68,7 @@ impl Triangle {
 
         det = 1.0 / det;
 
-        let tvec = *ray.origin() - self.points[0];
+        let tvec = *ray.origin() - self.triangle.points[0];
         let u = U::new(tvec.dot(&p) * det);
         if u.get() < 0.0 || u.get() > 1.0 {
             return None;
@@ -81,18 +92,8 @@ impl Triangle {
     }
 }
 
-pub struct TriangleData {
-    points: [Point; 3],
-}
-
-impl TriangleData {
-    pub fn new(points: [Point; 3]) -> Self {
-        Self { points }
-    }
-}
-
 pub struct TriangulatedMeshBuilder {
-    triangles: Vec<Triangle>,
+    triangles: Vec<TriangleData>,
     material_id: MaterialTypeId,
 }
 
@@ -104,9 +105,9 @@ impl TriangulatedMeshBuilder {
         }
     }
 
-    pub fn add_triangle(mut self, triangle: TriangleData) -> Self {
-        self.triangles.push(Triangle {
-            points: triangle.points,
+    pub fn add_triangle(mut self, triangle: Triangle) -> Self {
+        self.triangles.push(TriangleData {
+            triangle,
             material_id: self.material_id,
         });
 
@@ -117,5 +118,11 @@ impl TriangulatedMeshBuilder {
         TriangulatedMesh {
             triangles: self.triangles,
         }
+    }
+}
+
+impl Into<SceneObject> for TriangulatedMeshBuilder {
+    fn into(self) -> SceneObject {
+        SceneObject::TriangulatedMesh(self.build())
     }
 }

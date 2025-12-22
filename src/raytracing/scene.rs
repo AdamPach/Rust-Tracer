@@ -1,16 +1,16 @@
-use crate::raytracing::intersection::ray::Ray;
-use crate::raytracing::intersection::ray_hit::RayHit;
-use crate::raytracing::object::TriangulatedMesh;
-use crate::raytracing::object::material::material_type::{MaterialType, MaterialTypeId};
+use crate::raytracing::intersection::Ray;
+use crate::raytracing::intersection::RayHit;
 use std::collections::HashMap;
+use crate::raytracing::material::{MaterialType, MaterialTypeId};
+use crate::raytracing::triangulated_mesh::TriangulatedMesh;
+
+pub enum SceneObject {
+    TriangulatedMesh(TriangulatedMesh),
+}
 
 pub struct Scene {
     objects: Vec<SceneObject>,
     materials: HashMap<MaterialTypeId, MaterialType>,
-}
-
-pub enum SceneObject {
-    TriangulatedMesh(TriangulatedMesh),
 }
 
 impl Scene {
@@ -21,8 +21,8 @@ impl Scene {
         }
     }
 
-    pub fn add_object(&mut self, object: SceneObject) {
-        self.objects.push(object);
+    pub fn add_object<T: Into<SceneObject>>(&mut self, object: T) {
+        self.objects.push(object.into());
     }
 
     pub fn add_material(&mut self, material: impl Into<MaterialType>) -> MaterialTypeId {

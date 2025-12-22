@@ -1,14 +1,12 @@
-use crate::renderer::raytracer::shading::shaders::Shader;
 use crate::core::configuration::RendererState;
 use crate::core::geometry::coordinates::{X, Y, Z};
 use crate::core::geometry::point::Point;
 use crate::core::render::{PixelX, PixelY, Render};
-use crate::raytracing::object::material::ambient::AmbientMaterialBuilder;
-use crate::raytracing::object::material::color::{A, B, Color, G, R};
-use crate::raytracing::object::{TriangleData, TriangulatedMeshBuilder};
-use crate::raytracing::world::{Camera, Scene, SceneObject};
+use crate::raytracing::{Camera, Scene, Triangle, TriangulatedMeshBuilder};
+use crate::raytracing::material::ambient::AmbientMaterialBuilder;
+use crate::raytracing::material::color::{MaterialColor, A, B, G, R};
 use crate::renderer::raytracer::raytracer_configuration::RayTracerConfiguration;
-use crate::renderer::raytracer::shading::shaders::RaytracerShaders;
+use crate::renderer::raytracer::shading::{shade_hit_with_material};
 
 pub struct RayTracer {
     configuration: RayTracerConfiguration,
@@ -25,29 +23,23 @@ impl RayTracer {
 
         let mut scene = Scene::new();
 
-        let green = scene.add_material(AmbientMaterialBuilder::new(Color::new(
+        let green = scene.add_material(AmbientMaterialBuilder::new(MaterialColor::new(
             R::new(0.05),
             G::new(0.95),
             B::new(0.05),
             A::new(1.0),
         )));
 
-        let red = scene.add_material(AmbientMaterialBuilder::new(Color::new(
+        let red = scene.add_material(AmbientMaterialBuilder::new(MaterialColor::new(
             R::new(0.95),
             G::new(0.05),
             B::new(0.05),
             A::new(1.0),
         )));
-
-        let mesh_builder =
-            TriangulatedMeshBuilder::new(green).add_triangle(TriangleData::new([p1, p2, p3]));
-
-        scene.add_object(SceneObject::TriangulatedMesh(mesh_builder.build()));
-
-        let mesh_builder =
-            TriangulatedMeshBuilder::new(red).add_triangle(TriangleData::new([p1, p3, p4]));
-
-        scene.add_object(SceneObject::TriangulatedMesh(mesh_builder.build()));
+        
+        scene.add_object(TriangulatedMeshBuilder::new(green).add_triangle(Triangle::new([p1, p2, p3])));
+        
+        scene.add_object(TriangulatedMeshBuilder::new(red).add_triangle(Triangle::new([p1, p3, p4])));
 
         let configuration: RayTracerConfiguration = state.into();
 
@@ -76,15 +68,16 @@ impl RayTracer {
         render
     }
 
-    fn render_pixel(&self, x: PixelX, y: PixelY) -> Color {
+    fn render_pixel(&self, x: PixelX, y: PixelY) -> MaterialColor {
         let ray = self.camera.generate_ray(x, y);
 
-        match self.scene.find_intersection(ray) {
-            Some(ray_hit) => {
-                RaytracerShaders::shader(self.scene.get_material(ray_hit.material_id()).unwrap())
-                    .shade(ray_hit)
+        if let Some(ray_hit) = self.scene.find_intersection(ray) {
+
+            if let Some(material) = self.scene.get_material(ray_hit.material_id()) {
+                return shade_hit_with_material(material);
             }
-            None => Color::new(R::new(0.05), G::new(0.05), B::new(0.05), A::new(1.0)),
         }
+
+        MaterialColor::new(R::new(0.05), G::new(0.05), B::new(0.05), A::new(1.0))
     }
 }

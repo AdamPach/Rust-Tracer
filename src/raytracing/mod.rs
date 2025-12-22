@@ -1,5 +1,10 @@
+mod camera;
+mod scene;
 mod intersection;
-pub mod object;
-pub mod world;
+mod triangulated_mesh;
+pub mod material;
 
-pub use intersection::ray_hit::RayHit;
+pub use intersection::RayHit;
+pub use camera::Camera;
+pub use scene::Scene;
+pub use triangulated_mesh::{Triangle, TriangulatedMeshBuilder};
