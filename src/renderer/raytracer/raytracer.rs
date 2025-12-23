@@ -1,7 +1,7 @@
 use crate::core::configuration::RendererState;
 use crate::core::geometry::coordinates::{X, Y, Z};
 use crate::core::geometry::point::Point;
-use crate::core::render::{PixelPosition, Render, RenderPixel, RenderState};
+use crate::core::render::{PixelPosition, Render, RenderPixel};
 use crate::raytracing::material::ambient::AmbientMaterialBuilder;
 use crate::raytracing::material::color::{A, B, G, MaterialColor, R};
 use crate::raytracing::{Camera, Scene, Triangle, TriangulatedMeshBuilder};
@@ -65,32 +65,9 @@ impl RayTracer {
     }
 
     pub fn render_image(&self) -> Render {
-        let mut render = Render::new(self.configuration.size().clone());
+        let render = Render::new(self.configuration.size().clone());
 
-        let mut pixel_position = render.next();
-
-        loop {
-            let Some(position) = pixel_position else {
-                break;
-            };
-
-            match self.rendering_thread_pool.add_pixel_to_render(position) {
-                Ok(_) => {
-                    pixel_position = render.next();
-                    continue;
-                }
-                Err(_) => panic!("Failed to add pixel to render"),
-            }
-        }
-
-        loop {
-            match render.add_pixel(self.rendering_thread_pool.get_rendered_pixel().unwrap()) {
-                RenderState::InProgress => continue,
-                RenderState::Completed => break,
-            }
-        }
-
-        render
+        self.rendering_thread_pool.render(render)
     }
 }
 

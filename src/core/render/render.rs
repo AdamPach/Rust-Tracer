@@ -6,6 +6,7 @@ pub enum RenderState {
     Completed,
 }
 
+#[derive(Clone)]
 pub struct Render {
     size: Size,
     pixels_rgba: Vec<u8>,
