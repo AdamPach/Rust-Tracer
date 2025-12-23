@@ -1,26 +1,33 @@
 use crate::core::render::{PixelX, PixelY, RGBA};
 use crate::{Size, Width};
 
+pub enum RenderState {
+    InProgress,
+    Completed,
+}
+
 pub struct Render {
     size: Size,
     pixels_rgba: Vec<u8>,
     x_pos: usize,
     y_pos: usize,
+    missing_pixels: u32,
 }
 
 impl Render {
     pub fn new(size: Size) -> Self {
-        let render_size = size.get_width() * size.get_height() * 4;
+        let render_size = size.get_width() * size.get_height();
 
         Self {
             size,
-            pixels_rgba: vec![0; render_size],
+            pixels_rgba: vec![0; render_size * 4],
             x_pos: 0,
             y_pos: 0,
+            missing_pixels: render_size as u32,
         }
     }
 
-    pub fn add_pixel(&mut self, pixel: RenderPixel) {
+    pub fn add_pixel(&mut self, pixel: RenderPixel) -> RenderState {
         let index = 4 * pixel.index(&self.size.get_width());
 
         let color = pixel.color();
@@ -29,6 +36,13 @@ impl Render {
         self.pixels_rgba[index + 1] = color.g();
         self.pixels_rgba[index + 2] = color.b();
         self.pixels_rgba[index + 3] = color.a();
+
+        self.missing_pixels -= 1;
+
+        match self.missing_pixels {
+            0 => RenderState::Completed,
+            _ => RenderState::InProgress,
+        }
     }
 
     pub fn get_render_data(self) -> (Size, Vec<u8>) {
