@@ -7,6 +7,7 @@ use eframe::egui::{Context, TextureHandle};
 use eframe::epaint::{ColorImage, ImageData};
 use eframe::{Frame, egui};
 use std::default::Default;
+use std::env;
 
 pub struct RustTracerApplication {
     render: TextureHandle,
@@ -18,7 +19,7 @@ impl RustTracerApplication {
     pub fn new(into_state: impl Into<RendererState>, ctx: &Context) -> Self {
         let state: RendererState = into_state.into();
 
-        let renderer = RayTracer::new(state.clone(), WavefrontLoader);
+        let renderer = RayTracer::new(state.clone(), WavefrontLoader::new(env::current_dir().unwrap().join("assets/cube")));
 
         Self {
             render: ctx.load_texture(
