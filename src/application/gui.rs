@@ -1,6 +1,7 @@
 use crate::application::rendering_thread::RenderingThread;
 use crate::core::configuration::RendererState;
 use crate::core::render::Render;
+use crate::io::wavefront::WavefrontLoader;
 use crate::renderer::raytracer::RayTracer;
 use eframe::egui::{Context, TextureHandle};
 use eframe::epaint::{ColorImage, ImageData};
@@ -17,7 +18,7 @@ impl RustTracerApplication {
     pub fn new(into_state: impl Into<RendererState>, ctx: &Context) -> Self {
         let state: RendererState = into_state.into();
 
-        let renderer = RayTracer::new(state.clone());
+        let renderer = RayTracer::new(state.clone(), WavefrontLoader);
 
         Self {
             render: ctx.load_texture(

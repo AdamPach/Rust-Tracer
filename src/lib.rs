@@ -1,5 +1,6 @@
 mod application;
 mod core;
+mod io;
 mod raytracing;
 mod renderer;
 

@@ -4,43 +4,33 @@ use crate::raytracing::material::{MaterialType, MaterialTypeId};
 use crate::raytracing::triangulated_mesh::TriangulatedMesh;
 use std::collections::HashMap;
 
-pub enum SceneObject {
+pub trait SceneBuilder {
+    fn build_scene(&self) -> Scene;
+}
+
+pub enum Geometry {
     TriangulatedMesh(TriangulatedMesh),
 }
 
 pub struct Scene {
-    objects: Vec<SceneObject>,
-    materials: HashMap<MaterialTypeId, MaterialType>,
+    scene_descriptor: SceneDescriptor,
 }
 
 impl Scene {
-    pub fn new() -> Scene {
-        Self {
-            objects: Vec::new(),
-            materials: HashMap::new(),
-        }
-    }
-
-    pub fn add_object<T: Into<SceneObject>>(&mut self, object: T) {
-        self.objects.push(object.into());
-    }
-
-    pub fn add_material(&mut self, material: impl Into<MaterialType>) -> MaterialTypeId {
-        let id = MaterialTypeId::new(self.materials.len() as i32);
-        self.materials.insert(id, material.into());
-        id
+    pub fn new(scene_descriptor: SceneDescriptor) -> Scene {
+        Self { scene_descriptor }
     }
 
     pub fn get_material(&self, material: MaterialTypeId) -> Option<&MaterialType> {
-        self.materials.get(&material)
+        self.scene_descriptor.materials.get(&material)
     }
 
     pub fn find_intersection(&self, ray: Ray) -> Option<RayHit> {
         let mut intersection: Option<RayHit> = None;
 
-        for object in &self.objects {
+        for object in &self.scene_descriptor.objects {
             let hit = match object {
-                SceneObject::TriangulatedMesh(m) => match m.intersect(&ray) {
+                Geometry::TriangulatedMesh(m) => match m.intersect(&ray) {
                     Some(hit) => hit,
                     None => continue,
                 },
@@ -60,5 +50,29 @@ impl Scene {
         }
 
         intersection
+    }
+}
+
+pub struct SceneDescriptor {
+    objects: Vec<Geometry>,
+    materials: HashMap<MaterialTypeId, MaterialType>,
+}
+
+impl SceneDescriptor {
+    pub fn new() -> Self {
+        Self {
+            objects: Vec::new(),
+            materials: HashMap::new(),
+        }
+    }
+
+    pub fn add_object<T: Into<Geometry>>(&mut self, object: T) {
+        self.objects.push(object.into());
+    }
+
+    pub fn add_material(&mut self, material: impl Into<MaterialType>) -> MaterialTypeId {
+        let id = MaterialTypeId::new(self.materials.len() as i32);
+        self.materials.insert(id, material.into());
+        id
     }
 }

@@ -4,7 +4,7 @@ use crate::core::geometry::point::Point;
 use crate::raytracing::intersection::Hit;
 use crate::raytracing::intersection::Ray;
 use crate::raytracing::material::MaterialTypeId;
-use crate::raytracing::scene::SceneObject;
+use crate::raytracing::scene::Geometry;
 
 pub struct TriangulatedMesh {
     triangles: Vec<TriangleData>,
@@ -121,8 +121,8 @@ impl TriangulatedMeshBuilder {
     }
 }
 
-impl Into<SceneObject> for TriangulatedMeshBuilder {
-    fn into(self) -> SceneObject {
-        SceneObject::TriangulatedMesh(self.build())
+impl Into<Geometry> for TriangulatedMeshBuilder {
+    fn into(self) -> Geometry {
+        Geometry::TriangulatedMesh(self.build())
     }
 }
