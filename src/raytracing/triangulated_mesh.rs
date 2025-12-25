@@ -37,6 +37,7 @@ impl TriangulatedMesh {
     }
 }
 
+#[derive(Debug)]
 pub struct Triangle {
     points: [Point; 3],
     // normals: [Vector3; 3],
@@ -48,6 +49,7 @@ impl Triangle {
     }
 }
 
+#[derive(Debug)]
 struct TriangleData {
     triangle: Triangle,
     material_id: MaterialTypeId,
@@ -92,6 +94,7 @@ impl TriangleData {
     }
 }
 
+#[derive(Debug)]
 pub struct TriangulatedMeshBuilder {
     triangles: Vec<TriangleData>,
     material_id: MaterialTypeId,

@@ -15,8 +15,8 @@ pub struct Camera {
 }
 impl Camera {
     pub fn new(width: Width, height: Height, fov: f64) -> Self {
-        let from = Point::new(X::new(0.0), Y::new(0.0), Z::new(-1.0));
-        let at = Point::new(X::new(0.0), Y::new(0.0), Z::new(0.0));
+        let from = Point::new(X::new(0.0), Y::new(-0.5), Z::new(-3.0));
+        let at = Point::new(X::new(0.0), Y::new(-0.5), Z::new(0.0));
         let up = Vector3::new(X::new(0.0), Y::new(1.0), Z::new(0.0));
 
         let fy = (height / 2.0) / (fov / 2.0).tan();

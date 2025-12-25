@@ -2,7 +2,7 @@ use crate::core::geometry::coordinates::{X, Y, Z};
 use crate::core::geometry::vector::Vector3;
 use std::ops::Sub;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Point {
     x: X,
     y: Y,
@@ -12,6 +12,14 @@ pub struct Point {
 impl Point {
     pub fn new(x: X, y: Y, z: Z) -> Point {
         Point { x, y, z }
+    }
+    
+    pub fn default() -> Point {
+        Point {
+            x: X::new(0.0),
+            y: Y::new(0.0),
+            z: Z::new(0.0),
+        }
     }
 }
 

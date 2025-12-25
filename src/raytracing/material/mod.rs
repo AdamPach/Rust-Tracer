@@ -3,7 +3,7 @@ use crate::raytracing::material::ambient::AmbientMaterial;
 pub mod ambient;
 pub mod color;
 
-#[derive(Copy, Clone, Hash, Eq, PartialEq)]
+#[derive(Copy, Clone, Hash, Eq, PartialEq, Debug)]
 pub struct MaterialTypeId(i32);
 
 impl MaterialTypeId {
