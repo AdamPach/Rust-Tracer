@@ -5,7 +5,7 @@ use crate::raytracing::triangulated_mesh::TriangulatedMesh;
 use std::collections::HashMap;
 
 pub trait SceneBuilder {
-    fn build_scene(&self) -> Scene;
+    fn build_scene(self) -> Scene;
 }
 
 pub enum Geometry {

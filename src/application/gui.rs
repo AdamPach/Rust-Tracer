@@ -19,7 +19,10 @@ impl RustTracerApplication {
     pub fn new(into_state: impl Into<RendererState>, ctx: &Context) -> Self {
         let state: RendererState = into_state.into();
 
-        let renderer = RayTracer::new(state.clone(), WavefrontLoader::new(env::current_dir().unwrap().join("assets/cube")));
+        let renderer = RayTracer::new(
+            state.clone(),
+            WavefrontLoader::new(env::current_dir().unwrap().join("assets/cube.obj")),
+        );
 
         Self {
             render: ctx.load_texture(

@@ -13,7 +13,7 @@ impl Point {
     pub fn new(x: X, y: Y, z: Z) -> Point {
         Point { x, y, z }
     }
-    
+
     pub fn default() -> Point {
         Point {
             x: X::new(0.0),
