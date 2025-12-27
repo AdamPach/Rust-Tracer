@@ -6,6 +6,7 @@ use crate::core::geometry::vector::Vector3;
 use crate::core::render::{PixelX, PixelY};
 use crate::raytracing::intersection::Ray;
 
+#[derive(Clone)]
 pub struct Camera {
     width: Width,
     height: Height,

@@ -1,6 +1,7 @@
 use crate::core::geometry::coordinates::{X, Y, Z};
 use std::ops::Sub;
 
+#[derive(Copy, Clone)]
 pub struct Vector3 {
     x: X,
     y: Y,

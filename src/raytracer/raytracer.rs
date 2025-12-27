@@ -1,19 +1,19 @@
-use crate::core::configuration::RendererState;
+use crate::RendererState;
 use crate::core::render::{PixelPosition, Render, RenderPixel};
+use crate::raytracer::raytracer_configuration::RayTracerConfiguration;
+use crate::raytracer::threadpool::{Renderer, ThreadPool};
 use crate::raytracing::material::color::{A, B, G, MaterialColor, R};
-use crate::raytracing::{Camera, Scene, SceneBuilder};
-use crate::renderer::raytracer::raytracer_configuration::RayTracerConfiguration;
-use crate::renderer::raytracer::rendering_threadpool::{RenderingThreadPool, ThreadPoolRenderer};
-use crate::renderer::raytracer::shading::shade_hit_with_material;
+use crate::raytracing::{Camera, Scene, SceneBuilder, SceneDescriptor};
 use std::sync::Arc;
 
-pub struct RayTracer {
+pub struct Raytracer {
     configuration: RayTracerConfiguration,
-    rendering_thread_pool: RenderingThreadPool,
+    rendering_thread_pool: ThreadPool<RaytracerRenderer>,
+    renderer: Arc<RaytracerRenderer>,
 }
 
-impl RayTracer {
-    pub fn new<T: SceneBuilder>(state: RendererState, scene_builder: T) -> Self {
+impl Raytracer {
+    pub fn new(state: RendererState) -> Self {
         let configuration: RayTracerConfiguration = state.into();
 
         let camera = Camera::new(
@@ -22,16 +22,27 @@ impl RayTracer {
             std::f64::consts::FRAC_PI_4,
         );
 
-        let scene = scene_builder.build_scene();
+        let scene = Scene::new(SceneDescriptor::new());
 
         let renderer = Arc::new(RaytracerRenderer { scene, camera });
 
-        let rendering_thread_pool = RenderingThreadPool::new(32, renderer);
+        let rendering_thread_pool = ThreadPool::new(32, renderer.clone());
 
         Self {
             configuration,
             rendering_thread_pool,
+            renderer,
         }
+    }
+
+    pub fn set_scene<T: SceneBuilder>(&mut self, scene_builder: T) {
+        let scene = scene_builder.build_scene();
+        let camera = self.renderer.camera.clone();
+
+        self.renderer = Arc::new(RaytracerRenderer { scene, camera });
+
+        self.rendering_thread_pool
+            .set_new_renderer(self.renderer.clone())
     }
 
     pub fn render_image(&self) -> Render {
@@ -46,7 +57,7 @@ struct RaytracerRenderer {
     camera: Camera,
 }
 
-impl ThreadPoolRenderer for RaytracerRenderer {
+impl Renderer for RaytracerRenderer {
     fn render_pixel(&self, position: PixelPosition) -> RenderPixel {
         let (x, y) = position.get_pixel_coordinates();
 
@@ -57,7 +68,7 @@ impl ThreadPoolRenderer for RaytracerRenderer {
 
         if let Some(ray_hit) = self.scene.find_intersection(ray) {
             if let Some(material) = self.scene.get_material(ray_hit.material_id()) {
-                output_color = shade_hit_with_material(material);
+                output_color = crate::raytracer::shading::shade_hit_with_material(material);
             }
         }
 

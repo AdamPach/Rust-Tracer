@@ -6,3 +6,4 @@ edition = "2024"
 [dependencies]
 eframe = "0.33.0"
 anyhow = "1.0.100"
+arc-swap = "1.8.0"

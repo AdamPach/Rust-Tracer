@@ -1,26 +1,24 @@
 use crate::core::render::{PixelPosition, Render, RenderPixel};
+use arc_swap::ArcSwap;
 use std::sync::mpsc::{Receiver, Sender, SyncSender};
 use std::sync::{Arc, Mutex};
 
-pub trait ThreadPoolRenderer {
+pub trait Renderer {
     fn render_pixel(&self, position: PixelPosition) -> RenderPixel;
 }
 
-pub struct RenderingThreadPool {
-    rendering_threads: Vec<std::thread::JoinHandle<()>>,
-    sync_thread: std::thread::JoinHandle<()>,
+pub struct ThreadPool<T> {
     pixel_position_sender: SyncSender<PixelPosition>,
     sync_render_sender: SyncSender<(Render, SyncSender<Render>)>,
+    renderer: Arc<ArcSwap<T>>,
 }
 
-impl RenderingThreadPool {
-    pub fn new<T>(number_of_threads: u16, renderer: Arc<T>) -> Self
-    where
-        T: ThreadPoolRenderer,
-        T: Send + Sync + 'static,
-    {
-        let mut rendering_threads = Vec::with_capacity(number_of_threads as usize);
-
+impl<T> ThreadPool<T>
+where
+    T: Renderer,
+    T: Send + Sync + 'static,
+{
+    pub fn new(number_of_threads: u16, renderer: Arc<T>) -> Self {
         let (pixel_position_sender, pixel_position_receiver) =
             std::sync::mpsc::sync_channel::<PixelPosition>((number_of_threads * 2) as usize);
 
@@ -32,25 +30,22 @@ impl RenderingThreadPool {
 
         let pixel_position_receiver = Arc::new(Mutex::new(pixel_position_receiver));
 
+        let renderer = Arc::new(ArcSwap::from(renderer));
+
         for _ in 0..number_of_threads {
             let pixel_position_receiver = pixel_position_receiver.clone();
             let render_pixel_sender = render_pixel_sender.clone();
             let renderer = renderer.clone();
 
-            rendering_threads.push(spawn_rendering_thread(
-                renderer,
-                pixel_position_receiver,
-                render_pixel_sender,
-            ));
+            spawn_rendering_thread(renderer, pixel_position_receiver, render_pixel_sender);
         }
 
-        let sync_thread = spawn_sync_thread(sync_render_receiver, render_pixel_receiver);
+        spawn_sync_thread(sync_render_receiver, render_pixel_receiver);
 
         Self {
-            rendering_threads,
-            sync_thread,
             pixel_position_sender,
             sync_render_sender,
+            renderer,
         }
     }
 
@@ -77,6 +72,10 @@ impl RenderingThreadPool {
         reply_receiver
             .recv()
             .expect("Failed to receive reply from rendering thread")
+    }
+
+    pub fn set_new_renderer(&self, new_renderer: Arc<T>) {
+        self.renderer.store(new_renderer);
     }
 }
 
@@ -108,13 +107,13 @@ fn spawn_sync_thread(
     })
 }
 
-fn spawn_rendering_thread<T: ThreadPoolRenderer>(
-    renderer: Arc<T>,
+fn spawn_rendering_thread<T>(
+    renderer: Arc<ArcSwap<T>>,
     pixel_position_receiver: Arc<Mutex<Receiver<PixelPosition>>>,
     render_pixel_sender: Sender<RenderPixel>,
 ) -> std::thread::JoinHandle<()>
 where
-    T: ThreadPoolRenderer,
+    T: Renderer,
     T: Send + Sync + 'static,
 {
     std::thread::spawn(move || {
@@ -123,7 +122,7 @@ where
                 break;
             };
 
-            let render_pixel = renderer.render_pixel(position);
+            let render_pixel = renderer.load().render_pixel(position);
 
             if let Err(_) = render_pixel_sender.send(render_pixel) {
                 break;

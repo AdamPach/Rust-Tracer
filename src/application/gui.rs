@@ -2,7 +2,7 @@ use crate::application::rendering_thread::RenderingThread;
 use crate::core::configuration::RendererState;
 use crate::core::render::Render;
 use crate::io::wavefront::WavefrontLoader;
-use crate::renderer::raytracer::RayTracer;
+use crate::raytracer::Raytracer;
 use eframe::egui::{Context, TextureHandle};
 use eframe::epaint::{ColorImage, ImageData};
 use eframe::{Frame, egui};
@@ -19,10 +19,17 @@ impl RustTracerApplication {
     pub fn new(into_state: impl Into<RendererState>, ctx: &Context) -> Self {
         let state: RendererState = into_state.into();
 
-        let renderer = RayTracer::new(
-            state.clone(),
-            WavefrontLoader::new(env::current_dir().unwrap().join("assets/cube.obj")),
-        );
+        let mut renderer = Raytracer::new(state.clone());
+
+        // Improve a way how the renderer load a scene
+        // there could be potential loading error so the setting of the scene should react on it
+        // ,but try to eliminate creating of empty scene it is waste of time
+
+        // Improve the renderer, especially try to figure out how to switch scene without stoping the threads
+
+        renderer.set_scene(WavefrontLoader::new(
+            env::current_dir().unwrap().join("assets/cube.obj"),
+        ));
 
         Self {
             render: ctx.load_texture(

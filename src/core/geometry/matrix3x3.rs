@@ -1,6 +1,7 @@
 use crate::core::geometry::coordinates::{X, Y, Z};
 use crate::core::geometry::vector::Vector3;
 
+#[derive(Copy, Clone)]
 pub struct Matrix3x3 {
     data: [Vector3; 3],
 }

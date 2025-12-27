@@ -51,8 +51,6 @@ pub fn load_obj<T: AsRef<Path>>(path: T) -> anyhow::Result<SceneDescriptor> {
         }
     }
 
-    println!("Loaded {:?} vertices", obj_data);
-
     for mesh_builder in obj_data.geometry {
         scene.add_object(mesh_builder);
     }
