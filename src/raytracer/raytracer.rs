@@ -22,7 +22,7 @@ impl Raytracer {
             std::f64::consts::FRAC_PI_4,
         );
 
-        let scene = Scene::new(SceneDescriptor::new());
+        let scene = SceneDescriptor::new().to_scene();
 
         let renderer = Arc::new(RaytracerRenderer { scene, camera });
 
@@ -35,14 +35,16 @@ impl Raytracer {
         }
     }
 
-    pub fn set_scene<T: SceneBuilder>(&mut self, scene_builder: T) {
-        let scene = scene_builder.build_scene();
+    pub fn set_scene<T: SceneBuilder>(&mut self, scene_builder: T) -> anyhow::Result<()> {
+        let scene = scene_builder.build_scene()?;
         let camera = self.renderer.camera.clone();
 
         self.renderer = Arc::new(RaytracerRenderer { scene, camera });
 
         self.rendering_thread_pool
-            .set_new_renderer(self.renderer.clone())
+            .set_new_renderer(self.renderer.clone());
+
+        Ok(())
     }
 
     pub fn render_image(&self) -> Render {

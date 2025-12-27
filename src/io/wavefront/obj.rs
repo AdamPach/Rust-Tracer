@@ -7,6 +7,7 @@ use anyhow::Context;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
+use crate::raytracing::material::MaterialTypeId;
 
 #[derive(Debug)]
 struct ObjData {
@@ -17,7 +18,7 @@ struct ObjData {
 }
 
 pub fn load_obj<T: AsRef<Path>>(path: T) -> anyhow::Result<SceneDescriptor> {
-    let file = File::open(path).with_context(|| "Failed to open OBJ file!")?;
+    let file = File::open(path).with_context(|| "Failed to open file obj file")?;
 
     let mut scene = SceneDescriptor::new();
 
@@ -32,7 +33,7 @@ pub fn load_obj<T: AsRef<Path>>(path: T) -> anyhow::Result<SceneDescriptor> {
         vertices: Vec::new(),
         normals: Vec::new(),
         tex_coords: Vec::new(),
-        geometry: vec![TriangulatedMeshBuilder::new(green)],
+        geometry: Vec::new(),
     };
 
     let lines = BufReader::new(file).lines();
@@ -47,6 +48,7 @@ pub fn load_obj<T: AsRef<Path>>(path: T) -> anyhow::Result<SceneDescriptor> {
             "vn" => parse_normal(data, obj_data)?,
             "vt" => parse_texture_coordinates(data, obj_data)?,
             "f" => parse_faces(data, obj_data)?,
+            "o" | "g" => add_new_mesh(obj_data, green),
             _ => continue,
         }
     }
@@ -61,16 +63,18 @@ pub fn load_obj<T: AsRef<Path>>(path: T) -> anyhow::Result<SceneDescriptor> {
 fn parse_vertex(vertices: &str, mut data: ObjData) -> anyhow::Result<ObjData> {
     let mut array = [0.0; 3];
 
-    let vertices = vertices.split_whitespace().collect::<Vec<&str>>();
+    let mut vertices = vertices.split_whitespace();
 
-    if vertices.len() != 3 {
-        return Err(anyhow::anyhow!(
-            "Only 3D vertices are supported! Found vertex with {} dimensions.",
-            vertices.len()
-        ));
-    }
+    for i in 0..3 {
+        let coord_str = match vertices.next() {
+            Some(coord) => coord,
+            None => {
+                return Err(anyhow::anyhow!(
+                    "Only 3D vertices are supported! Found vertex with less than 3 dimensions."
+                ));
+            }
+        } ;
 
-    for (i, coord_str) in vertices.into_iter().enumerate() {
         array[i] = coord_str
             .parse::<f64>()
             .with_context(|| "Failed to parse a float array")?;
@@ -88,20 +92,23 @@ fn parse_vertex(vertices: &str, mut data: ObjData) -> anyhow::Result<ObjData> {
 fn parse_normal(normals: &str, mut data: ObjData) -> anyhow::Result<ObjData> {
     let mut array = [0.0; 3];
 
-    let normals = normals.split_whitespace().collect::<Vec<&str>>();
+    let mut normals = normals.split_whitespace();
 
-    if normals.len() != 3 {
-        return Err(anyhow::anyhow!(
-            "Only 3D normals are supported! Found normal with {} dimensions.",
-            normals.len()
-        ));
-    }
+    for i in 0..3 {
+        let coord_str = match normals.next() {
+            Some(coord) => coord,
+            None => {
+                return Err(anyhow::anyhow!(
+                    "Only 3D normals are supported! Found normal with less than 3 dimensions."
+                ));
+            }
+        } ;
 
-    for (i, coord_str) in normals.into_iter().enumerate() {
         array[i] = coord_str
             .parse::<f64>()
             .with_context(|| "Failed to parse a float array")?;
     }
+
 
     data.normals.push(array);
 
@@ -111,16 +118,18 @@ fn parse_normal(normals: &str, mut data: ObjData) -> anyhow::Result<ObjData> {
 fn parse_texture_coordinates(texture: &str, mut data: ObjData) -> anyhow::Result<ObjData> {
     let mut array = [0.0; 2];
 
-    let texture = texture.split_whitespace().collect::<Vec<&str>>();
+    let texture = texture.split_whitespace();
 
-    if texture.len() != 2 {
-        return Err(anyhow::anyhow!(
-            "Only 2D texture coordinates are supported! Found texture with {} dimensions.",
-            texture.len()
-        ));
-    }
+    for i in 0..2 {
+        let coord_str = match texture.clone().nth(i) {
+            Some(coord) => coord,
+            None => {
+                return Err(anyhow::anyhow!(
+                    "Only 2D texture coordinates are supported! Found texture coordinate with less than 2 dimensions."
+                ));
+            }
+        } ;
 
-    for (i, coord_str) in texture.into_iter().enumerate() {
         array[i] = coord_str
             .parse::<f64>()
             .with_context(|| "Failed to parse a float array")?;
@@ -134,23 +143,29 @@ fn parse_texture_coordinates(texture: &str, mut data: ObjData) -> anyhow::Result
 fn parse_faces(faces: &str, mut data: ObjData) -> anyhow::Result<ObjData> {
     let mut points = [Point::default(); 3];
 
-    let faces = faces.split_whitespace().collect::<Vec<&str>>();
+    let mesh_builder = data.geometry.pop().ok_or_else(|| {
+        anyhow::anyhow!("No mesh defined before face definition! Define a new object or group before defining faces.")
+    })?;
 
-    if faces.len() != 3 {
-        return Err(anyhow::anyhow!(
-            "Only triangular faces are supported! Found face with {} vertices.",
-            faces.len()
-        ));
-    }
+    let mut faces = faces.split_whitespace();
 
-    for (index, face) in faces.into_iter().enumerate() {
+    for i in 0..3 {
+        let face = match faces.next(){
+            Some(face) => face,
+            None => {
+                return Err(anyhow::anyhow!(
+                    "Only triangular faces are supported! Found face with less than 3 vertices."
+                ));
+            }
+        };
+
         let indices: Vec<&str> = face.split('/').collect();
 
         let vertex_index: usize = indices[0]
             .parse::<usize>()
             .with_context(|| "Failed to parse vertex index!")?;
 
-        points[index] = match data.vertices.get(vertex_index - 1) {
+        points[i] = match data.vertices.get(vertex_index - 1) {
             Some(vertex) => vertex.clone(),
             None => {
                 return Err(anyhow::anyhow!(
@@ -161,10 +176,14 @@ fn parse_faces(faces: &str, mut data: ObjData) -> anyhow::Result<ObjData> {
         };
     }
 
-    let mesh_builder = data.geometry.pop().unwrap();
-
     data.geometry
         .push(mesh_builder.add_triangle(Triangle::new(points)));
 
     Ok(data)
+}
+
+fn add_new_mesh(mut data: ObjData, material: MaterialTypeId) -> ObjData {
+    data.geometry.push(TriangulatedMeshBuilder::new(material));
+
+    data
 }

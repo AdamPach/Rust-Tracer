@@ -5,7 +5,7 @@ use crate::raytracing::triangulated_mesh::TriangulatedMesh;
 use std::collections::HashMap;
 
 pub trait SceneBuilder {
-    fn build_scene(self) -> Scene;
+    fn build_scene(self) -> anyhow::Result<Scene>;
 }
 
 pub enum Geometry {
@@ -17,10 +17,6 @@ pub struct Scene {
 }
 
 impl Scene {
-    pub fn new(scene_descriptor: SceneDescriptor) -> Scene {
-        Self { scene_descriptor }
-    }
-
     pub fn get_material(&self, material: MaterialTypeId) -> Option<&MaterialType> {
         self.scene_descriptor.materials.get(&material)
     }
@@ -74,5 +70,11 @@ impl SceneDescriptor {
         let id = MaterialTypeId::new(self.materials.len() as i32);
         self.materials.insert(id, material.into());
         id
+    }
+
+    pub fn to_scene(self) -> Scene {
+        Scene{
+            scene_descriptor: self,
+        }
     }
 }

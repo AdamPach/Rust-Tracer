@@ -21,15 +21,14 @@ impl RustTracerApplication {
 
         let mut renderer = Raytracer::new(state.clone());
 
-        // Improve a way how the renderer load a scene
-        // there could be potential loading error so the setting of the scene should react on it
-        // ,but try to eliminate creating of empty scene it is waste of time
-
-        // Improve the renderer, especially try to figure out how to switch scene without stoping the threads
-
-        renderer.set_scene(WavefrontLoader::new(
-            env::current_dir().unwrap().join("assets/cube.obj"),
+        let result = renderer.set_scene(WavefrontLoader::new(
+            env::current_dir().unwrap().join("assets/cubes.obj"),
         ));
+
+        if let Err(e) = result {
+            println!("[ERROR]: Loading a scene failed with errors!");
+            println!("{:#}", e);
+        }
 
         Self {
             render: ctx.load_texture(

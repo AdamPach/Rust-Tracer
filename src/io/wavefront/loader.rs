@@ -1,5 +1,5 @@
 use crate::io::wavefront::obj::load_obj;
-use crate::raytracing::{Scene, SceneBuilder, SceneDescriptor};
+use crate::raytracing::{Scene, SceneBuilder};
 use std::path::PathBuf;
 
 pub struct WavefrontLoader {
@@ -10,14 +10,12 @@ impl WavefrontLoader {
     pub fn new<T: Into<PathBuf>>(path: T) -> Self {
         WavefrontLoader { path: path.into() }
     }
-
-    fn load_wavefront(self) -> anyhow::Result<SceneDescriptor> {
-        Ok(load_obj(self.path)?)
-    }
 }
 
 impl SceneBuilder for WavefrontLoader {
-    fn build_scene(self) -> Scene {
-        Scene::new(self.load_wavefront().unwrap())
+    fn build_scene(self) -> anyhow::Result<Scene> {
+        let scene = load_obj(self.path)?;
+        
+        Ok(scene.to_scene())
     }
 }
