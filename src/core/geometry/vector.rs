@@ -38,15 +38,15 @@ impl Vector3 {
             z: Z::new(self.x.get() * other.y.get() - self.y.get() * other.x.get()),
         }
     }
-    
+
     pub fn get_x(&self) -> X {
         self.x
     }
-    
+
     pub fn get_y(&self) -> Y {
         self.y
     }
-    
+
     pub fn get_z(&self) -> Z {
         self.z
     }

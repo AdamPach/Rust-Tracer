@@ -1,13 +1,15 @@
 use crate::core::geometry::coordinates::{X, Y, Z};
 use crate::core::geometry::point::Point;
+use crate::io::wavefront::mtl::load_mtl;
+use crate::raytracing::material::MaterialTypeId;
 use crate::raytracing::material::ambient::AmbientMaterialBuilder;
 use crate::raytracing::material::color::{A, B, G, MaterialColor, R};
 use crate::raytracing::{SceneDescriptor, Triangle, TriangulatedMeshBuilder};
 use anyhow::Context;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
-use crate::raytracing::material::MaterialTypeId;
 
 #[derive(Debug)]
 struct ObjData {
@@ -15,10 +17,12 @@ struct ObjData {
     normals: Vec<[f64; 3]>,
     tex_coords: Vec<[f64; 2]>,
     geometry: Vec<TriangulatedMeshBuilder>,
+    materials: HashMap<String, MaterialTypeId>,
 }
 
-pub fn load_obj<T: AsRef<Path>>(path: T) -> anyhow::Result<SceneDescriptor> {
-    let file = File::open(path).with_context(|| "Failed to open file obj file")?;
+pub fn load_obj<P: AsRef<Path>>(path: P) -> anyhow::Result<SceneDescriptor> {
+    let file = File::open(path.as_ref())
+        .with_context(|| format!("Failed to open mtl file: {}", path.as_ref().display()))?;
 
     let mut scene = SceneDescriptor::new();
 
@@ -34,12 +38,17 @@ pub fn load_obj<T: AsRef<Path>>(path: T) -> anyhow::Result<SceneDescriptor> {
         normals: Vec::new(),
         tex_coords: Vec::new(),
         geometry: Vec::new(),
+        materials: HashMap::new(),
     };
 
     let lines = BufReader::new(file).lines();
 
     for line in lines {
         let line = line?;
+
+        if line.is_empty() {
+            continue;
+        }
 
         let (prefix, data) = line.split_once(' ').unwrap();
 
@@ -49,6 +58,7 @@ pub fn load_obj<T: AsRef<Path>>(path: T) -> anyhow::Result<SceneDescriptor> {
             "vt" => parse_texture_coordinates(data, obj_data)?,
             "f" => parse_faces(data, obj_data)?,
             "o" | "g" => add_new_mesh(obj_data, green),
+            "mtllib" => load_mtllib_file(data, path.as_ref().parent().unwrap(), obj_data)?,
             _ => continue,
         }
     }
@@ -73,7 +83,7 @@ fn parse_vertex(vertices: &str, mut data: ObjData) -> anyhow::Result<ObjData> {
                     "Only 3D vertices are supported! Found vertex with less than 3 dimensions."
                 ));
             }
-        } ;
+        };
 
         array[i] = coord_str
             .parse::<f64>()
@@ -102,13 +112,12 @@ fn parse_normal(normals: &str, mut data: ObjData) -> anyhow::Result<ObjData> {
                     "Only 3D normals are supported! Found normal with less than 3 dimensions."
                 ));
             }
-        } ;
+        };
 
         array[i] = coord_str
             .parse::<f64>()
             .with_context(|| "Failed to parse a float array")?;
     }
-
 
     data.normals.push(array);
 
@@ -128,7 +137,7 @@ fn parse_texture_coordinates(texture: &str, mut data: ObjData) -> anyhow::Result
                     "Only 2D texture coordinates are supported! Found texture coordinate with less than 2 dimensions."
                 ));
             }
-        } ;
+        };
 
         array[i] = coord_str
             .parse::<f64>()
@@ -150,7 +159,7 @@ fn parse_faces(faces: &str, mut data: ObjData) -> anyhow::Result<ObjData> {
     let mut faces = faces.split_whitespace();
 
     for i in 0..3 {
-        let face = match faces.next(){
+        let face = match faces.next() {
             Some(face) => face,
             None => {
                 return Err(anyhow::anyhow!(
@@ -186,4 +195,16 @@ fn add_new_mesh(mut data: ObjData, material: MaterialTypeId) -> ObjData {
     data.geometry.push(TriangulatedMeshBuilder::new(material));
 
     data
+}
+
+fn load_mtllib_file<P: AsRef<Path>>(
+    mtllib_file: &str,
+    folder_path: P,
+    mut data: ObjData,
+) -> anyhow::Result<ObjData> {
+    let mtllib_path = folder_path.as_ref().join(mtllib_file);
+
+    let new_materials = load_mtl(mtllib_path)?;
+
+    Ok(data)
 }

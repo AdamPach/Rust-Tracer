@@ -73,7 +73,7 @@ impl SceneDescriptor {
     }
 
     pub fn to_scene(self) -> Scene {
-        Scene{
+        Scene {
             scene_descriptor: self,
         }
     }
