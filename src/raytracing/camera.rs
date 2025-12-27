@@ -10,14 +10,14 @@ use crate::raytracing::intersection::Ray;
 pub struct Camera {
     width: Width,
     height: Height,
-    view_from: Point,
+    from: Point,
     fy: f64,
     camera_to_world: Matrix3x3,
 }
 impl Camera {
     pub fn new(width: Width, height: Height, fov: f64) -> Self {
-        let from = Point::new(X::new(0.0), Y::new(-0.5), Z::new(-3.0));
-        let at = Point::new(X::new(0.0), Y::new(-0.5), Z::new(0.0));
+        let from = Point::new(X::new(7.5), Y::new(0.0), Z::new(0.0));
+        let at = Point::new(X::new(0.0), Y::new(0.0), Z::new(0.0));
         let up = Vector3::new(X::new(0.0), Y::new(1.0), Z::new(0.0));
 
         let fy = (height / 2.0) / (fov / 2.0).tan();
@@ -28,17 +28,19 @@ impl Camera {
 
         let y_c = z_c.cross(&x_c).norm();
 
+        let camera_to_world = Matrix3x3::new([x_c, y_c, z_c]).transpose();
+
         Self {
             width,
             height,
-            view_from: from,
+            from,
             fy,
-            camera_to_world: Matrix3x3::new([x_c, y_c, z_c]),
+            camera_to_world,
         }
     }
 
     pub fn generate_ray(&self, x: PixelX, y: PixelY) -> Ray {
-        let origin = self.view_from;
+        let origin = self.from;
 
         let direction = self.get_direction_vector(x, y).norm();
 
@@ -48,7 +50,7 @@ impl Camera {
     fn get_direction_vector(&self, x: PixelX, y: PixelY) -> Vector3 {
         let direction = Vector3::new(
             X::new(x - (self.width / 2.0)),
-            Y::new(y - (self.height / 2.0)),
+            Y::new((self.height / 2.0) - y.get()),
             Z::new(-self.fy),
         );
 
