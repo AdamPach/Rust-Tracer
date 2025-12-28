@@ -7,7 +7,7 @@ use crate::raytracing::material::MaterialTypeId;
 use crate::raytracing::scene::Geometry;
 
 pub struct TriangulatedMesh {
-    triangles: Vec<TriangleData>,
+    triangles: Vec<Triangle>,
 }
 
 impl TriangulatedMesh {
@@ -41,24 +41,20 @@ impl TriangulatedMesh {
 pub struct Triangle {
     points: [Point; 3],
     // normals: [Vector3; 3],
-}
-
-impl Triangle {
-    pub fn new(points: [Point; 3]) -> Self {
-        Self { points }
-    }
-}
-
-#[derive(Debug)]
-struct TriangleData {
-    triangle: Triangle,
     material_id: MaterialTypeId,
 }
 
-impl TriangleData {
+impl Triangle {
+    pub fn new(points: [Point; 3], material_id: MaterialTypeId) -> Self {
+        Self { 
+            points,
+            material_id,
+        }
+    }
+    
     pub fn intersect(&self, ray: &Ray) -> Option<Hit> {
-        let e1 = self.triangle.points[1] - self.triangle.points[0];
-        let e2 = self.triangle.points[2] - self.triangle.points[0];
+        let e1 = self.points[1] - self.points[0];
+        let e2 = self.points[2] - self.points[0];
 
         let p = ray.direction().cross(&e2);
 
@@ -70,7 +66,7 @@ impl TriangleData {
 
         det = 1.0 / det;
 
-        let tvec = *ray.origin() - self.triangle.points[0];
+        let tvec = *ray.origin() - self.points[0];
         let u = U::new(tvec.dot(&p) * det);
         if u.get() < 0.0 || u.get() > 1.0 {
             return None;
@@ -96,23 +92,18 @@ impl TriangleData {
 
 #[derive(Debug)]
 pub struct TriangulatedMeshBuilder {
-    triangles: Vec<TriangleData>,
-    material_id: MaterialTypeId,
+    triangles: Vec<Triangle>,
 }
 
 impl TriangulatedMeshBuilder {
-    pub fn new(material_id: MaterialTypeId) -> Self {
+    pub fn new() -> Self {
         Self {
-            material_id,
             triangles: Vec::new(),
         }
     }
 
     pub fn add_triangle(mut self, triangle: Triangle) -> Self {
-        self.triangles.push(TriangleData {
-            triangle,
-            material_id: self.material_id,
-        });
+        self.triangles.push(triangle);
 
         self
     }

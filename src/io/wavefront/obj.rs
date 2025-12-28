@@ -2,8 +2,6 @@ use crate::core::geometry::coordinates::{X, Y, Z};
 use crate::core::geometry::point::Point;
 use crate::io::wavefront::mtl::load_mtl;
 use crate::raytracing::material::MaterialTypeId;
-use crate::raytracing::material::ambient::AmbientMaterialBuilder;
-use crate::raytracing::material::color::{A, B, G, MaterialColor, R};
 use crate::raytracing::{SceneDescriptor, Triangle, TriangulatedMeshBuilder};
 use anyhow::Context;
 use std::collections::HashMap;
@@ -11,27 +9,19 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
 
-#[derive(Debug)]
 struct ObjData {
     vertices: Vec<Point>,
     normals: Vec<[f64; 3]>,
     tex_coords: Vec<[f64; 2]>,
     geometry: Vec<TriangulatedMeshBuilder>,
     materials: HashMap<String, MaterialTypeId>,
+    current_material: Option<MaterialTypeId>,
+    scene_descriptor: SceneDescriptor
 }
 
 pub fn load_obj<P: AsRef<Path>>(path: P) -> anyhow::Result<SceneDescriptor> {
     let file = File::open(path.as_ref())
         .with_context(|| format!("Failed to open mtl file: {}", path.as_ref().display()))?;
-
-    let mut scene = SceneDescriptor::new();
-
-    let green = scene.add_material(AmbientMaterialBuilder::new(MaterialColor::new(
-        R::new(0.05),
-        G::new(0.95),
-        B::new(0.05),
-        A::new(1.0),
-    )));
 
     let mut obj_data = ObjData {
         vertices: Vec::new(),
@@ -39,6 +29,8 @@ pub fn load_obj<P: AsRef<Path>>(path: P) -> anyhow::Result<SceneDescriptor> {
         tex_coords: Vec::new(),
         geometry: Vec::new(),
         materials: HashMap::new(),
+        current_material: None,
+        scene_descriptor: SceneDescriptor::new(),
     };
 
     let lines = BufReader::new(file).lines();
@@ -57,17 +49,18 @@ pub fn load_obj<P: AsRef<Path>>(path: P) -> anyhow::Result<SceneDescriptor> {
             "vn" => parse_normal(data, obj_data)?,
             "vt" => parse_texture_coordinates(data, obj_data)?,
             "f" => parse_faces(data, obj_data)?,
-            "o" | "g" => add_new_mesh(obj_data, green),
+            "o" | "g" => add_new_mesh(obj_data),
             "mtllib" => load_mtllib_file(data, path.as_ref().parent().unwrap(), obj_data)?,
+            "usemtl" => use_mtl_material(data, obj_data)?,
             _ => continue,
         }
     }
 
     for mesh_builder in obj_data.geometry {
-        scene.add_object(mesh_builder);
+        obj_data.scene_descriptor.add_object(mesh_builder);
     }
 
-    Ok(scene)
+    Ok(obj_data.scene_descriptor)
 }
 
 fn parse_vertex(vertices: &str, mut data: ObjData) -> anyhow::Result<ObjData> {
@@ -185,14 +178,18 @@ fn parse_faces(faces: &str, mut data: ObjData) -> anyhow::Result<ObjData> {
         };
     }
 
+    let Some(material_id) = data.current_material else {
+        return Err(anyhow::anyhow!("No material defined before face definition!"));
+    };
+
     data.geometry
-        .push(mesh_builder.add_triangle(Triangle::new(points)));
+        .push(mesh_builder.add_triangle(Triangle::new(points, material_id)));
 
     Ok(data)
 }
 
-fn add_new_mesh(mut data: ObjData, material: MaterialTypeId) -> ObjData {
-    data.geometry.push(TriangulatedMeshBuilder::new(material));
+fn add_new_mesh(mut data: ObjData) -> ObjData {
+    data.geometry.push(TriangulatedMeshBuilder::new());
 
     data
 }
@@ -206,5 +203,26 @@ fn load_mtllib_file<P: AsRef<Path>>(
 
     let new_materials = load_mtl(mtllib_path)?;
 
+    for (material_name, material) in new_materials {
+        let material_id = data
+            .scene_descriptor
+            .add_material(material);
+
+        data.materials.insert(material_name, material_id);
+    }
+
     Ok(data)
 }
+
+fn use_mtl_material(material_name: &str, mut data: ObjData) -> anyhow::Result<ObjData> {
+    let material_id = match data.materials.get(material_name)
+    {
+        Some(material_id) => *material_id,
+        None => Err(anyhow::anyhow!("Material with name {} not found!", material_name))?,
+    };
+
+    data.current_material = Some(material_id);
+
+    Ok(data)
+}
+
