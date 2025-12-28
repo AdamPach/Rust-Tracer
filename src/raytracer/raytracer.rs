@@ -22,7 +22,7 @@ impl Raytracer {
             std::f64::consts::FRAC_PI_4,
         );
 
-        let scene = SceneDescriptor::new().to_scene();
+        let scene = SceneDescriptor::default().scene();
 
         let renderer = Arc::new(RaytracerRenderer { scene, camera });
 

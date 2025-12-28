@@ -1,8 +1,7 @@
 use crate::raytracing::intersection::Ray;
 use crate::raytracing::intersection::RayHit;
-use crate::raytracing::material::{MaterialType, MaterialTypeId};
+use crate::raytracing::material::{MaterialType, MaterialTypeId, MaterialsRegistry};
 use crate::raytracing::triangulated_mesh::TriangulatedMesh;
-use std::collections::HashMap;
 
 pub trait SceneBuilder {
     fn build_scene(self) -> anyhow::Result<Scene>;
@@ -18,7 +17,7 @@ pub struct Scene {
 
 impl Scene {
     pub fn get_material(&self, material: MaterialTypeId) -> Option<&MaterialType> {
-        self.scene_descriptor.materials.get(&material)
+        self.scene_descriptor.materials.get(material)
     }
 
     pub fn find_intersection(&self, ray: Ray) -> Option<RayHit> {
@@ -51,14 +50,14 @@ impl Scene {
 
 pub struct SceneDescriptor {
     objects: Vec<Geometry>,
-    materials: HashMap<MaterialTypeId, MaterialType>,
+    materials: MaterialsRegistry,
 }
 
 impl SceneDescriptor {
-    pub fn new() -> Self {
+    pub fn new(materials: MaterialsRegistry) -> Self {
         Self {
             objects: Vec::new(),
-            materials: HashMap::new(),
+            materials,
         }
     }
 
@@ -66,15 +65,18 @@ impl SceneDescriptor {
         self.objects.push(object.into());
     }
 
-    pub fn add_material(&mut self, material: impl Into<MaterialType>) -> MaterialTypeId {
-        let id = MaterialTypeId::new(self.materials.len() as i32);
-        self.materials.insert(id, material.into());
-        id
-    }
-
-    pub fn to_scene(self) -> Scene {
+    pub fn scene(self) -> Scene {
         Scene {
             scene_descriptor: self,
+        }
+    }
+}
+
+impl Default for SceneDescriptor {
+    fn default() -> Self {
+        Self {
+            objects: Vec::new(),
+            materials: MaterialsRegistry::new(),
         }
     }
 }

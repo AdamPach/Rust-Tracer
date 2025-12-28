@@ -2,7 +2,7 @@ use crate::core::geometry::coordinates::{X, Y, Z};
 use crate::core::geometry::point::Point;
 use crate::io::wavefront::mtl::load_mtl;
 use crate::io::wavefront::parse_array::parse_array;
-use crate::raytracing::material::MaterialTypeId;
+use crate::raytracing::material::{MaterialTypeId, MaterialsRegistry};
 use crate::raytracing::{SceneDescriptor, Triangle, TriangulatedMeshBuilder};
 use anyhow::Context;
 use std::collections::HashMap;
@@ -17,7 +17,7 @@ struct ObjData {
     geometry: Vec<TriangulatedMeshBuilder>,
     materials: HashMap<String, MaterialTypeId>,
     current_material: Option<MaterialTypeId>,
-    scene_descriptor: SceneDescriptor,
+    materials_registry: MaterialsRegistry,
 }
 
 pub fn load_obj<P: AsRef<Path>>(path: P) -> anyhow::Result<SceneDescriptor> {
@@ -31,7 +31,7 @@ pub fn load_obj<P: AsRef<Path>>(path: P) -> anyhow::Result<SceneDescriptor> {
         geometry: Vec::new(),
         materials: HashMap::new(),
         current_material: None,
-        scene_descriptor: SceneDescriptor::new(),
+        materials_registry: MaterialsRegistry::new(),
     };
 
     let lines = BufReader::new(file).lines();
@@ -57,11 +57,13 @@ pub fn load_obj<P: AsRef<Path>>(path: P) -> anyhow::Result<SceneDescriptor> {
         }
     }
 
+    let mut scene_descriptor = SceneDescriptor::new(obj_data.materials_registry);
+
     for mesh_builder in obj_data.geometry {
-        obj_data.scene_descriptor.add_object(mesh_builder);
+        scene_descriptor.add_object(mesh_builder);
     }
 
-    Ok(obj_data.scene_descriptor)
+    Ok(scene_descriptor)
 }
 
 fn parse_vertex(vertices: &str, mut data: ObjData) -> anyhow::Result<ObjData> {
@@ -177,7 +179,7 @@ fn load_mtllib_file<P: AsRef<Path>>(
     let new_materials = load_mtl(mtllib_path)?;
 
     for (material_name, material) in new_materials {
-        let material_id = data.scene_descriptor.add_material(material);
+        let material_id = data.materials_registry.add(material);
 
         data.materials.insert(material_name, material_id);
     }
