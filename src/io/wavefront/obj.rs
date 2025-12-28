@@ -1,6 +1,7 @@
 use crate::core::geometry::coordinates::{X, Y, Z};
 use crate::core::geometry::point::Point;
 use crate::io::wavefront::mtl::load_mtl;
+use crate::io::wavefront::parse_array::parse_array;
 use crate::raytracing::material::MaterialTypeId;
 use crate::raytracing::{SceneDescriptor, Triangle, TriangulatedMeshBuilder};
 use anyhow::Context;
@@ -16,7 +17,7 @@ struct ObjData {
     geometry: Vec<TriangulatedMeshBuilder>,
     materials: HashMap<String, MaterialTypeId>,
     current_material: Option<MaterialTypeId>,
-    scene_descriptor: SceneDescriptor
+    scene_descriptor: SceneDescriptor,
 }
 
 pub fn load_obj<P: AsRef<Path>>(path: P) -> anyhow::Result<SceneDescriptor> {
@@ -64,24 +65,15 @@ pub fn load_obj<P: AsRef<Path>>(path: P) -> anyhow::Result<SceneDescriptor> {
 }
 
 fn parse_vertex(vertices: &str, mut data: ObjData) -> anyhow::Result<ObjData> {
-    let mut array = [0.0; 3];
-
-    let mut vertices = vertices.split_whitespace();
-
-    for i in 0..3 {
-        let coord_str = match vertices.next() {
-            Some(coord) => coord,
-            None => {
-                return Err(anyhow::anyhow!(
-                    "Only 3D vertices are supported! Found vertex with less than 3 dimensions."
-                ));
-            }
-        };
-
-        array[i] = coord_str
-            .parse::<f64>()
-            .with_context(|| "Failed to parse a float array")?;
-    }
+    let array = parse_array::<f64, 3, fn() -> anyhow::Error>(
+        vertices,
+        || {
+            anyhow::anyhow!(
+                "Only 3D vertices are supported! Found vertex with less than 3 dimensions."
+            )
+        },
+        || anyhow::anyhow!("Failed to parse vertex in obj file: invalid float value"),
+    )?;
 
     data.vertices.push(Point::new(
         X::new(array[0]),
@@ -93,24 +85,15 @@ fn parse_vertex(vertices: &str, mut data: ObjData) -> anyhow::Result<ObjData> {
 }
 
 fn parse_normal(normals: &str, mut data: ObjData) -> anyhow::Result<ObjData> {
-    let mut array = [0.0; 3];
-
-    let mut normals = normals.split_whitespace();
-
-    for i in 0..3 {
-        let coord_str = match normals.next() {
-            Some(coord) => coord,
-            None => {
-                return Err(anyhow::anyhow!(
-                    "Only 3D normals are supported! Found normal with less than 3 dimensions."
-                ));
-            }
-        };
-
-        array[i] = coord_str
-            .parse::<f64>()
-            .with_context(|| "Failed to parse a float array")?;
-    }
+    let array = parse_array::<f64, 3, fn() -> anyhow::Error>(
+        normals,
+        || {
+            anyhow::anyhow!(
+                "Only 3D normals are supported! Found normal with less than 3 dimensions."
+            )
+        },
+        || anyhow::anyhow!("Failed to parse normal in obj file: invalid float value"),
+    )?;
 
     data.normals.push(array);
 
@@ -118,24 +101,15 @@ fn parse_normal(normals: &str, mut data: ObjData) -> anyhow::Result<ObjData> {
 }
 
 fn parse_texture_coordinates(texture: &str, mut data: ObjData) -> anyhow::Result<ObjData> {
-    let mut array = [0.0; 2];
-
-    let texture = texture.split_whitespace();
-
-    for i in 0..2 {
-        let coord_str = match texture.clone().nth(i) {
-            Some(coord) => coord,
-            None => {
-                return Err(anyhow::anyhow!(
-                    "Only 2D texture coordinates are supported! Found texture coordinate with less than 2 dimensions."
-                ));
-            }
-        };
-
-        array[i] = coord_str
-            .parse::<f64>()
-            .with_context(|| "Failed to parse a float array")?;
-    }
+    let array = parse_array::<f64, 2, fn() -> anyhow::Error>(
+        texture,
+        || {
+            anyhow::anyhow!(
+                "Only 2D texture coordinates are supported! Found texture coordinate with less than 2 dimensions."
+            )
+        },
+        || anyhow::anyhow!("Failed to parse texture coordinate in obj file: invalid float value"),
+    )?;
 
     data.tex_coords.push(array);
 
@@ -152,14 +126,11 @@ fn parse_faces(faces: &str, mut data: ObjData) -> anyhow::Result<ObjData> {
     let mut faces = faces.split_whitespace();
 
     for i in 0..3 {
-        let face = match faces.next() {
-            Some(face) => face,
-            None => {
-                return Err(anyhow::anyhow!(
-                    "Only triangular faces are supported! Found face with less than 3 vertices."
-                ));
-            }
-        };
+        let face = faces.next().ok_or_else(|| {
+            anyhow::anyhow!(
+                "Only triangular faces are supported! Found face with less than 3 vertices."
+            )
+        })?;
 
         let indices: Vec<&str> = face.split('/').collect();
 
@@ -179,7 +150,9 @@ fn parse_faces(faces: &str, mut data: ObjData) -> anyhow::Result<ObjData> {
     }
 
     let Some(material_id) = data.current_material else {
-        return Err(anyhow::anyhow!("No material defined before face definition!"));
+        return Err(anyhow::anyhow!(
+            "No material defined before face definition!"
+        ));
     };
 
     data.geometry
@@ -204,9 +177,7 @@ fn load_mtllib_file<P: AsRef<Path>>(
     let new_materials = load_mtl(mtllib_path)?;
 
     for (material_name, material) in new_materials {
-        let material_id = data
-            .scene_descriptor
-            .add_material(material);
+        let material_id = data.scene_descriptor.add_material(material);
 
         data.materials.insert(material_name, material_id);
     }
@@ -215,14 +186,12 @@ fn load_mtllib_file<P: AsRef<Path>>(
 }
 
 fn use_mtl_material(material_name: &str, mut data: ObjData) -> anyhow::Result<ObjData> {
-    let material_id = match data.materials.get(material_name)
-    {
-        Some(material_id) => *material_id,
-        None => Err(anyhow::anyhow!("Material with name {} not found!", material_name))?,
-    };
+    let material_id = data
+        .materials
+        .get(material_name)
+        .ok_or_else(|| anyhow::anyhow!("Material with name {} not found!", material_name))?;
 
-    data.current_material = Some(material_id);
+    data.current_material = Some(*material_id);
 
     Ok(data)
 }
-

@@ -1,3 +1,4 @@
+use crate::io::wavefront::parse_array::parse_array;
 use crate::raytracing::material::MaterialType;
 use crate::raytracing::material::ambient::AmbientMaterialBuilder;
 use crate::raytracing::material::color::{A, B, G, MaterialColor, R};
@@ -55,24 +56,11 @@ fn parse_ambient(
     coefficients: &str,
     mut materials: Vec<MtlMaterial>,
 ) -> anyhow::Result<Vec<MtlMaterial>> {
-    let mut array = [0.0; 3];
-
-    let mut coefficients = coefficients.split_whitespace();
-
-    for i in 0..3 {
-        let coefficient = match coefficients.next() {
-            Some(coord) => coord,
-            None => {
-                return Err(anyhow::anyhow!(
-                    "Failed to parse ambient coefficient: expected 3 values, found less"
-                ));
-            }
-        };
-
-        array[i] = coefficient
-            .parse::<f32>()
-            .with_context(|| "Failed to parse ambient coefficient: Not a number")?;
-    }
+    let array = parse_array::<f32, 3, fn() -> anyhow::Error>(
+        coefficients,
+        || anyhow::anyhow!("Failed to parse ambient coefficient: expected 3 values, found less"),
+        || anyhow::anyhow!("Failed to parse ambient coefficient in mtllib: invalid float value"),
+    )?;
 
     let Some(last_material) = materials.last_mut() else {
         return Err(anyhow::anyhow!(

@@ -46,12 +46,12 @@ pub struct Triangle {
 
 impl Triangle {
     pub fn new(points: [Point; 3], material_id: MaterialTypeId) -> Self {
-        Self { 
+        Self {
             points,
             material_id,
         }
     }
-    
+
     pub fn intersect(&self, ray: &Ray) -> Option<Hit> {
         let e1 = self.points[1] - self.points[0];
         let e2 = self.points[2] - self.points[0];
