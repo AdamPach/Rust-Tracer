@@ -7,5 +7,5 @@ mod raytracing;
 pub use application::app::RustTracer;
 
 pub use core::configuration::{
-    Height, RenderSize, RendererState, RustTracerConfiguration, Size, Width, WindowSize,
+    Height, RenderSize, RustTracerConfiguration, Size, Width, WindowSize,
 };

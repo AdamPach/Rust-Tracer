@@ -1,24 +1,25 @@
-use crate::RendererState;
+use crate::core::geometry::point::Point;
 use crate::core::render::{PixelPosition, Render, RenderPixel};
-use crate::raytracer::raytracer_configuration::RayTracerConfiguration;
+use crate::raytracer::settings::RaytracerSettings;
 use crate::raytracer::threadpool::{Renderer, ThreadPool};
+use crate::raytracer::{RaytracerCommand, RaytracerResponse};
 use crate::raytracing::material::color::{A, B, G, MaterialColor, R};
 use crate::raytracing::{Camera, Scene, SceneBuilder, SceneDescriptor};
 use std::sync::Arc;
 
 pub struct Raytracer {
-    configuration: RayTracerConfiguration,
+    state: RaytracerSettings,
     rendering_thread_pool: ThreadPool<RaytracerRenderer>,
     renderer: Arc<RaytracerRenderer>,
 }
 
 impl Raytracer {
-    pub fn new(state: RendererState) -> Self {
-        let configuration: RayTracerConfiguration = state.into();
+    pub fn new(state: impl Into<RaytracerSettings>) -> Self {
+        let state: RaytracerSettings = state.into();
 
         let camera = Camera::new(
-            configuration.size().get_width(),
-            configuration.size().get_height(),
+            state.size(),
+            state.camera_view_from(),
             std::f64::consts::FRAC_PI_4,
         );
 
@@ -29,7 +30,7 @@ impl Raytracer {
         let rendering_thread_pool = ThreadPool::new(32, renderer.clone());
 
         Self {
-            configuration,
+            state,
             rendering_thread_pool,
             renderer,
         }
@@ -47,8 +48,30 @@ impl Raytracer {
         Ok(())
     }
 
-    pub fn render_image(&self) -> Render {
-        let render = Render::new(self.configuration.size().clone());
+    pub fn send_command(&mut self, command: RaytracerCommand) -> RaytracerResponse {
+        match command {
+            RaytracerCommand::RenderFrame => RaytracerResponse::RenderComplete(self.render_image()),
+            RaytracerCommand::CameraUpdate { position } => {
+                self.set_camera(position).unwrap();
+                RaytracerResponse::SettingsUpdated
+            }
+        }
+    }
+
+    fn set_camera(&mut self, from: Point) -> anyhow::Result<()> {
+        let scene = self.renderer.scene.clone();
+        let camera = Camera::new(self.state.size(), from, std::f64::consts::FRAC_PI_4);
+
+        self.renderer = Arc::new(RaytracerRenderer { scene, camera });
+
+        self.rendering_thread_pool
+            .set_new_renderer(self.renderer.clone());
+
+        Ok(())
+    }
+
+    fn render_image(&self) -> Render {
+        let render = Render::new(self.state.size().clone());
 
         self.rendering_thread_pool.render(render)
     }

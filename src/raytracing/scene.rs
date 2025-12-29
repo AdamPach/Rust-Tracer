@@ -7,10 +7,12 @@ pub trait SceneBuilder {
     fn build_scene(self) -> anyhow::Result<Scene>;
 }
 
+#[derive(Clone)]
 pub enum Geometry {
     TriangulatedMesh(TriangulatedMesh),
 }
 
+#[derive(Clone)]
 pub struct Scene {
     scene_descriptor: SceneDescriptor,
 }
@@ -48,6 +50,7 @@ impl Scene {
     }
 }
 
+#[derive(Clone)]
 pub struct SceneDescriptor {
     objects: Vec<Geometry>,
     materials: MaterialsRegistry,

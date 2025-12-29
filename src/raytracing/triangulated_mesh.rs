@@ -6,6 +6,7 @@ use crate::raytracing::intersection::Ray;
 use crate::raytracing::material::MaterialTypeId;
 use crate::raytracing::scene::Geometry;
 
+#[derive(Clone)]
 pub struct TriangulatedMesh {
     triangles: Vec<Triangle>,
 }
@@ -37,7 +38,7 @@ impl TriangulatedMesh {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Triangle {
     points: [Point; 3],
     // normals: [Vector3; 3],

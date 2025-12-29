@@ -1,23 +1,25 @@
 use crate::application::rendering_thread::RenderingThread;
-use crate::core::configuration::RendererState;
+use crate::application::state::ApplicationState;
+use crate::core::geometry::coordinates::{X, Y, Z};
+use crate::core::geometry::point::Point;
 use crate::core::render::Render;
 use crate::io::wavefront::WavefrontLoader;
-use crate::raytracer::Raytracer;
+use crate::raytracer::{Raytracer, RaytracerCommand};
 use eframe::egui::{Context, TextureHandle};
 use eframe::epaint::{ColorImage, ImageData};
 use eframe::{Frame, egui};
 use std::default::Default;
 use std::env;
 
-pub struct RustTracerApplication {
+pub struct Application {
     render: TextureHandle,
     rendering_thread: RenderingThread,
-    state: RendererState,
+    state: ApplicationState,
 }
 
-impl RustTracerApplication {
-    pub fn new(into_state: impl Into<RendererState>, ctx: &Context) -> Self {
-        let state: RendererState = into_state.into();
+impl Application {
+    pub fn new(into_state: impl Into<ApplicationState>, ctx: &Context) -> Self {
+        let state: ApplicationState = into_state.into();
 
         let mut renderer = Raytracer::new(state.clone());
 
@@ -48,7 +50,7 @@ impl RustTracerApplication {
     }
 }
 
-impl eframe::App for RustTracerApplication {
+impl eframe::App for Application {
     fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
         self.try_update_render(ctx);
 
@@ -64,7 +66,45 @@ impl eframe::App for RustTracerApplication {
         egui::Window::new("Settings")
             .default_width(200.0)
             .resizable(false)
-            .show(ctx, |_ui| {});
+            .show(ctx, |ui| {
+                ui.label("Camera");
+
+                egui::Grid::new("camera")
+                    .num_columns(2)
+                    .spacing([40.0, 4.0])
+                    .show(ui, |ui| {
+                        ui.label("View from ");
+                        ui.horizontal(|ui| {
+                            ui.label("X:");
+                            ui.add(
+                                egui::DragValue::new(&mut self.state.camera_setting.position[0])
+                                    .speed(0.1),
+                            );
+                            ui.label("Y:");
+                            ui.add(
+                                egui::DragValue::new(&mut self.state.camera_setting.position[1])
+                                    .speed(0.1),
+                            );
+                            ui.label("Z:");
+                            ui.add(
+                                egui::DragValue::new(&mut self.state.camera_setting.position[2])
+                                    .speed(0.1),
+                            );
+                        });
+                        ui.end_row();
+                    });
+
+                if ui.button("Set Camera").clicked() {
+                    self.rendering_thread
+                        .send_command(RaytracerCommand::CameraUpdate {
+                            position: Point::new(
+                                X::new(self.state.camera_setting.position[0]),
+                                Y::new(self.state.camera_setting.position[1]),
+                                Z::new(self.state.camera_setting.position[2]),
+                            ),
+                        });
+                }
+            });
     }
 }
 

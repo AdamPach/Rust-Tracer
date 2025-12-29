@@ -13,10 +13,12 @@ impl MaterialTypeId {
     }
 }
 
+#[derive(Clone)]
 pub enum MaterialType {
     Ambient(AmbientMaterial),
 }
 
+#[derive(Clone)]
 pub struct MaterialsRegistry {
     next_id: i32,
     materials: HashMap<MaterialTypeId, MaterialType>,
