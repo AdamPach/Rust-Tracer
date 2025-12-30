@@ -1,5 +1,5 @@
 use crate::core::render::{PixelPosition, Render, RenderPixel};
-use arc_swap::ArcSwap;
+use std::ops::Deref;
 use std::sync::mpsc::{Receiver, Sender, SyncSender};
 use std::sync::{Arc, Mutex};
 
@@ -10,7 +10,7 @@ pub trait Renderer {
 pub struct ThreadPool<T> {
     pixel_position_sender: SyncSender<PixelPosition>,
     sync_render_sender: SyncSender<(Render, SyncSender<Render>)>,
-    renderer: Arc<ArcSwap<T>>,
+    renderer: Arc<T>,
 }
 
 impl<T> ThreadPool<T>
@@ -18,7 +18,7 @@ where
     T: Renderer,
     T: Send + Sync + 'static,
 {
-    pub fn new(number_of_threads: u16, renderer: Arc<T>) -> Self {
+    pub fn new(number_of_threads: u16, renderer: T) -> Self {
         let (pixel_position_sender, pixel_position_receiver) =
             std::sync::mpsc::sync_channel::<PixelPosition>((number_of_threads * 2) as usize);
 
@@ -30,7 +30,7 @@ where
 
         let pixel_position_receiver = Arc::new(Mutex::new(pixel_position_receiver));
 
-        let renderer = Arc::new(ArcSwap::from(renderer));
+        let renderer = Arc::new(renderer);
 
         for _ in 0..number_of_threads {
             let pixel_position_receiver = pixel_position_receiver.clone();
@@ -73,10 +73,6 @@ where
             .recv()
             .expect("Failed to receive reply from rendering thread")
     }
-
-    pub fn set_new_renderer(&self, new_renderer: Arc<T>) {
-        self.renderer.store(new_renderer);
-    }
 }
 
 fn spawn_sync_thread(
@@ -107,8 +103,16 @@ fn spawn_sync_thread(
     })
 }
 
+impl<T> Deref for ThreadPool<T> {
+    type Target = Arc<T>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.renderer
+    }
+}
+
 fn spawn_rendering_thread<T>(
-    renderer: Arc<ArcSwap<T>>,
+    renderer: Arc<T>,
     pixel_position_receiver: Arc<Mutex<Receiver<PixelPosition>>>,
     render_pixel_sender: Sender<RenderPixel>,
 ) -> std::thread::JoinHandle<()>
@@ -122,7 +126,7 @@ where
                 break;
             };
 
-            let render_pixel = renderer.load().render_pixel(position);
+            let render_pixel = renderer.render_pixel(position);
 
             if let Err(_) = render_pixel_sender.send(render_pixel) {
                 break;

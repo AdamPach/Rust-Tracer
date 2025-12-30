@@ -1,5 +1,6 @@
 mod commands;
 mod raytracer;
+mod raytracer_renderer;
 pub mod settings;
 mod shading;
 pub mod threadpool;

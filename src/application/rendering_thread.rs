@@ -57,8 +57,6 @@ fn rendering_thread(
             if let RaytracerResponse::RenderComplete(render) = render {
                 let _ = render_sender.send(render);
             }
-
-            std::thread::sleep(std::time::Duration::from_secs(1));
         }
     });
 }
