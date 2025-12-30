@@ -2,15 +2,15 @@ use crate::core::configuration::Size;
 use crate::core::geometry::point::Point;
 
 pub struct RaytracerSettings {
-    pub size: Size,
-    pub camera_view_from: Point,
+    size: Size,
+    camera_settings: CameraSettings,
 }
 
 impl RaytracerSettings {
-    pub fn new(size: Size, camera_view_from: Point) -> Self {
+    pub fn new(size: Size, camera_settings: CameraSettings) -> Self {
         Self {
             size,
-            camera_view_from,
+            camera_settings,
         }
     }
 
@@ -18,7 +18,12 @@ impl RaytracerSettings {
         self.size.clone()
     }
 
-    pub fn camera_view_from(&self) -> Point {
-        self.camera_view_from.clone()
+    pub fn camera_settings(&self) -> CameraSettings {
+        self.camera_settings.clone()
     }
+}
+
+#[derive(Clone)]
+pub struct CameraSettings {
+    pub position: Point,
 }

@@ -15,9 +15,11 @@ impl Raytracer {
     pub fn new(state: impl Into<RaytracerSettings>) -> Self {
         let state: RaytracerSettings = state.into();
 
+        let camera_settings = state.camera_settings();
+
         let camera = Camera::new(
             state.size(),
-            state.camera_view_from(),
+            camera_settings.position,
             std::f64::consts::FRAC_PI_4,
         );
 

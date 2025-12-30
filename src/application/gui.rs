@@ -77,30 +77,30 @@ impl eframe::App for Application {
                         ui.horizontal(|ui| {
                             ui.label("X:");
                             ui.add(
-                                egui::DragValue::new(&mut self.state.camera_setting.position[0])
+                                egui::DragValue::new(&mut self.state.camera_state.position[0])
                                     .speed(0.1),
                             );
                             ui.label("Y:");
                             ui.add(
-                                egui::DragValue::new(&mut self.state.camera_setting.position[1])
+                                egui::DragValue::new(&mut self.state.camera_state.position[1])
                                     .speed(0.1),
                             );
                             ui.label("Z:");
                             ui.add(
-                                egui::DragValue::new(&mut self.state.camera_setting.position[2])
+                                egui::DragValue::new(&mut self.state.camera_state.position[2])
                                     .speed(0.1),
                             );
                         });
                         ui.end_row();
                     });
 
-                if ui.button("Set Camera").clicked() {
+                if ui.button("Update Camera").clicked() {
                     self.rendering_thread
                         .send_command(RaytracerCommand::CameraUpdate {
                             position: Point::new(
-                                X::new(self.state.camera_setting.position[0]),
-                                Y::new(self.state.camera_setting.position[1]),
-                                Z::new(self.state.camera_setting.position[2]),
+                                X::new(self.state.camera_state.position[0]),
+                                Y::new(self.state.camera_state.position[1]),
+                                Z::new(self.state.camera_state.position[2]),
                             ),
                         });
                 }
