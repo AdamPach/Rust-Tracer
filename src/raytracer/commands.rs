@@ -1,9 +1,9 @@
-use crate::core::geometry::point::Point;
 use crate::core::render::Render;
+use crate::raytracer::CameraSettings;
 
 pub enum RaytracerCommand {
     RenderFrame,
-    CameraUpdate { position: Point },
+    CameraUpdate(CameraSettings),
 }
 
 pub enum RaytracerResponse {

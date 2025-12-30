@@ -4,7 +4,7 @@ use crate::core::geometry::coordinates::{X, Y, Z};
 use crate::core::geometry::point::Point;
 use crate::core::render::Render;
 use crate::io::wavefront::WavefrontLoader;
-use crate::raytracer::{Raytracer, RaytracerCommand};
+use crate::raytracer::{CameraSettings, Raytracer, RaytracerCommand};
 use eframe::egui::{Context, TextureHandle};
 use eframe::epaint::{ColorImage, ImageData};
 use eframe::{Frame, egui};
@@ -96,13 +96,13 @@ impl eframe::App for Application {
 
                 if ui.button("Update Camera").clicked() {
                     self.rendering_thread
-                        .send_command(RaytracerCommand::CameraUpdate {
+                        .send_command(RaytracerCommand::CameraUpdate(CameraSettings {
                             position: Point::new(
                                 X::new(self.state.camera_state.position[0]),
                                 Y::new(self.state.camera_state.position[1]),
                                 Z::new(self.state.camera_state.position[2]),
                             ),
-                        });
+                        }));
                 }
             });
     }

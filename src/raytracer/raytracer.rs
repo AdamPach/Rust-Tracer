@@ -1,9 +1,8 @@
-use crate::core::geometry::point::Point;
 use crate::core::render::Render;
 use crate::raytracer::raytracer_renderer::RaytracerRenderer;
 use crate::raytracer::settings::RaytracerSettings;
 use crate::raytracer::threadpool::ThreadPool;
-use crate::raytracer::{RaytracerCommand, RaytracerResponse};
+use crate::raytracer::{CameraSettings, RaytracerCommand, RaytracerResponse};
 use crate::raytracing::{Camera, SceneBuilder, SceneDescriptor};
 
 pub struct Raytracer {
@@ -46,15 +45,19 @@ impl Raytracer {
     pub fn send_command(&mut self, command: RaytracerCommand) -> RaytracerResponse {
         match command {
             RaytracerCommand::RenderFrame => RaytracerResponse::RenderComplete(self.render_image()),
-            RaytracerCommand::CameraUpdate { position } => {
-                self.set_camera(position).unwrap();
+            RaytracerCommand::CameraUpdate(settings) => {
+                self.set_camera(settings).unwrap();
                 RaytracerResponse::SettingsUpdated
             }
         }
     }
 
-    fn set_camera(&mut self, from: Point) -> anyhow::Result<()> {
-        let camera = Camera::new(self.state.size(), from, std::f64::consts::FRAC_PI_4);
+    fn set_camera(&mut self, camera_settings: CameraSettings) -> anyhow::Result<()> {
+        let camera = Camera::new(
+            self.state.size(),
+            camera_settings.position,
+            std::f64::consts::FRAC_PI_4,
+        );
 
         self.rendering_thread_pool.set_camera(camera);
 

@@ -1,8 +1,8 @@
 use crate::core::geometry::coordinates::{X, Y, Z};
 use crate::core::geometry::point::Point;
+use crate::raytracer::CameraSettings;
 use crate::raytracer::RaytracerSettings;
 use crate::{RustTracerConfiguration, Size};
-use crate::raytracer::CameraSettings;
 
 #[derive(Clone)]
 pub struct ApplicationState {
@@ -31,13 +31,13 @@ impl Into<RaytracerSettings> for ApplicationState {
     fn into(self) -> RaytracerSettings {
         RaytracerSettings::new(
             self.size,
-            CameraSettings{
+            CameraSettings {
                 position: Point::new(
                     X::new(self.camera_state.position[0]),
                     Y::new(self.camera_state.position[1]),
                     Z::new(self.camera_state.position[2]),
-                )
-            }
+                ),
+            },
         )
     }
 }

@@ -7,4 +7,4 @@ pub mod threadpool;
 
 pub use commands::{RaytracerCommand, RaytracerResponse};
 pub use raytracer::Raytracer;
-pub use settings::{RaytracerSettings, CameraSettings};
+pub use settings::{CameraSettings, RaytracerSettings};
