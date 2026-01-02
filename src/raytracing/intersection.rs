@@ -3,6 +3,7 @@ use crate::core::geometry::point::Point;
 use crate::core::geometry::vector::Vector3;
 use crate::raytracing::material::MaterialTypeId;
 
+#[derive(Clone)]
 pub struct Ray {
     origin: Point,
     direction: Vector3,
@@ -33,6 +34,7 @@ impl Ray {
 
 pub struct RayHit {
     barycentric: Barycentric,
+    ray: Ray,
     distance: f64,
     material_id: MaterialTypeId,
     normals: [Vector3; 3],
@@ -54,10 +56,15 @@ impl RayHit {
 
         (self.normals[0] * w + self.normals[1] * u + self.normals[2] * v).norm()
     }
+
+    pub fn ray(&self) -> &Ray {
+        &self.ray
+    }
 }
 
 pub struct Hit {
     barycentric: Barycentric,
+    ray: Ray,
     distance: f64,
     material_id: MaterialTypeId,
     normals: [Vector3; 3],
@@ -66,12 +73,14 @@ pub struct Hit {
 impl Hit {
     pub fn new(
         barycentric: Barycentric,
+        ray: Ray,
         material_id: MaterialTypeId,
         distance: f64,
         normals: [Vector3; 3],
     ) -> Self {
         Self {
             barycentric,
+            ray,
             distance,
             material_id,
             normals,
@@ -88,6 +97,7 @@ impl Hit {
             distance: self.distance,
             material_id: self.material_id,
             normals: self.normals,
+            ray: self.ray,
         }
     }
 }

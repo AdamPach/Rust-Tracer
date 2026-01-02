@@ -21,6 +21,18 @@ impl Point {
             z: Z::new(0.0),
         }
     }
+
+    pub fn x(&self) -> X {
+        self.x
+    }
+
+    pub fn y(&self) -> Y {
+        self.y
+    }
+
+    pub fn z(&self) -> Z {
+        self.z
+    }
 }
 
 impl Sub for Point {

@@ -12,6 +12,22 @@ impl MaterialColor {
     pub fn new(r: R, g: G, b: B, a: A) -> Self {
         Self { r, g, b, a }
     }
+
+    pub fn r(&self) -> R {
+        self.r.clone()
+    }
+
+    pub fn g(&self) -> G {
+        self.g.clone()
+    }
+
+    pub fn b(&self) -> B {
+        self.b.clone()
+    }
+
+    pub fn a(&self) -> A {
+        self.a.clone()
+    }
 }
 
 impl Into<RGBA> for MaterialColor {
@@ -38,11 +54,19 @@ impl R {
     pub fn new(r: f32) -> Self {
         R(r)
     }
+
+    pub fn get(&self) -> f32 {
+        self.0
+    }
 }
 
 impl G {
     pub fn new(g: f32) -> Self {
         G(g)
+    }
+
+    pub fn get(&self) -> f32 {
+        self.0
     }
 }
 
@@ -50,10 +74,18 @@ impl B {
     pub fn new(b: f32) -> Self {
         B(b)
     }
+
+    pub fn get(&self) -> f32 {
+        self.0
+    }
 }
 
 impl A {
     pub fn new(a: f32) -> Self {
         A(a)
+    }
+
+    pub fn get(&self) -> f32 {
+        self.0
     }
 }

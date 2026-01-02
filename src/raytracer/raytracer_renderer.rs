@@ -1,7 +1,6 @@
 use crate::core::render::{PixelPosition, RenderPixel};
-use crate::raytracer::shading::shade_hit;
+use crate::raytracer::shading::{TracingContext, trace_ray};
 use crate::raytracer::threadpool::Renderer;
-use crate::raytracing::material::color::{A, B, G, MaterialColor, R};
 use crate::raytracing::{Camera, Scene};
 use arc_swap::ArcSwap;
 use std::sync::Arc;
@@ -34,17 +33,10 @@ impl Renderer for RaytracerRenderer {
 
         let ray = self.camera.load().generate_ray(x, y);
 
-        let mut output_color =
-            MaterialColor::new(R::new(0.05), G::new(0.05), B::new(0.05), A::new(1.0));
-
         let scene = self.scene.load();
 
-        if let Some(ray_hit) = scene.find_intersection(ray) {
-            if let Some(color) = shade_hit(&ray_hit, &scene) {
-                output_color = color;
-            }
-        }
+        let ctx = TracingContext::new(&scene, 30);
 
-        position.create_render_pixel(output_color)
+        position.create_render_pixel(trace_ray(ray, ctx))
     }
 }

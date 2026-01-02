@@ -91,6 +91,7 @@ impl Triangle {
 
         Some(Hit::new(
             barycentric,
+            ray.clone(),
             self.material_id,
             distance,
             self.normals.clone(),
