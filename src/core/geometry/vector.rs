@@ -1,7 +1,7 @@
 use crate::core::geometry::coordinates::{X, Y, Z};
-use std::ops::Sub;
+use std::ops::{Add, Mul, Sub};
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Vector3 {
     x: X,
     y: Y,
@@ -60,6 +60,40 @@ impl Sub for Vector3 {
             x: self.x - rhs.x,
             y: self.y - rhs.y,
             z: self.z - rhs.z,
+        }
+    }
+}
+
+impl Add for Vector3 {
+    type Output = Vector3;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Vector3 {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+            z: self.z + rhs.z,
+        }
+    }
+}
+
+impl Mul<f64> for Vector3 {
+    type Output = Vector3;
+
+    fn mul(self, rhs: f64) -> Self::Output {
+        Vector3 {
+            x: X::new(self.x.get() * rhs),
+            y: Y::new(self.y.get() * rhs),
+            z: Z::new(self.z.get() * rhs),
+        }
+    }
+}
+
+impl Default for Vector3 {
+    fn default() -> Self {
+        Self {
+            x: X::new(0.0),
+            y: Y::new(0.0),
+            z: Z::new(0.0),
         }
     }
 }

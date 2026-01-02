@@ -1,5 +1,5 @@
-use crate::raytracing::material::color::MaterialColor;
 use crate::raytracing::material::MaterialType;
+use crate::raytracing::material::color::MaterialColor;
 
 pub struct EmissiveMaterial {
     emission: MaterialColor,
@@ -17,15 +17,13 @@ pub struct EmissiveMaterialBuilder {
 
 impl EmissiveMaterialBuilder {
     pub fn new(emission: MaterialColor) -> Self {
-        Self {
-            emission,
-        }
+        Self { emission }
     }
 }
 
 impl Into<MaterialType> for EmissiveMaterialBuilder {
     fn into(self) -> MaterialType {
-        MaterialType::Emissive(EmissiveMaterial{
+        MaterialType::Emissive(EmissiveMaterial {
             emission: self.emission,
         })
     }

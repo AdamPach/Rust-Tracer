@@ -31,10 +31,7 @@ impl Into<ApplicationState> for RustTracerConfiguration {
 
 impl Into<RaytracerSettings> for ApplicationState {
     fn into(self) -> RaytracerSettings {
-        RaytracerSettings::new(
-            self.size,
-            self.camera_state.into()
-        )
+        RaytracerSettings::new(self.size, self.camera_state.into())
     }
 }
 

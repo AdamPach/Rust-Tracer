@@ -1,5 +1,6 @@
 use crate::core::geometry::coordinates::{X, Y, Z};
 use crate::core::geometry::point::Point;
+use crate::core::geometry::vector::Vector3;
 use crate::io::wavefront::mtl::load_mtl;
 use crate::io::wavefront::parse_array::parse_array;
 use crate::raytracing::material::{MaterialTypeId, MaterialsRegistry};
@@ -12,7 +13,7 @@ use std::path::Path;
 
 struct ObjData {
     vertices: Vec<Point>,
-    normals: Vec<[f64; 3]>,
+    normals: Vec<Vector3>,
     tex_coords: Vec<[f64; 2]>,
     geometry: Vec<TriangulatedMeshBuilder>,
     materials: HashMap<String, MaterialTypeId>,
@@ -97,7 +98,11 @@ fn parse_normal(normals: &str, mut data: ObjData) -> anyhow::Result<ObjData> {
         || anyhow::anyhow!("Failed to parse normal in obj file: invalid float value"),
     )?;
 
-    data.normals.push(array);
+    data.normals.push(Vector3::new(
+        X::new(array[0]),
+        Y::new(array[1]),
+        Z::new(array[2]),
+    ));
 
     Ok(data)
 }
@@ -120,6 +125,7 @@ fn parse_texture_coordinates(texture: &str, mut data: ObjData) -> anyhow::Result
 
 fn parse_faces(faces: &str, mut data: ObjData) -> anyhow::Result<ObjData> {
     let mut points = [Point::default(); 3];
+    let mut normals = [Vector3::default(); 3];
 
     let mesh_builder = data.geometry.pop().ok_or_else(|| {
         anyhow::anyhow!("No mesh defined before face definition! Define a new object or group before defining faces.")
@@ -149,6 +155,20 @@ fn parse_faces(faces: &str, mut data: ObjData) -> anyhow::Result<ObjData> {
                 ));
             }
         };
+
+        let normal_index: usize = indices[2]
+            .parse::<usize>()
+            .with_context(|| "Failed to parse normal index!")?;
+
+        normals[i] = match data.normals.get(normal_index - 1) {
+            Some(normal) => normal.clone(),
+            None => {
+                return Err(anyhow::anyhow!(
+                    "Normal with index {} does not exists!",
+                    normal_index
+                ));
+            }
+        }
     }
 
     let Some(material_id) = data.current_material else {
@@ -158,7 +178,7 @@ fn parse_faces(faces: &str, mut data: ObjData) -> anyhow::Result<ObjData> {
     };
 
     data.geometry
-        .push(mesh_builder.add_triangle(Triangle::new(points, material_id)));
+        .push(mesh_builder.add_triangle(Triangle::new(points, normals, material_id)));
 
     Ok(data)
 }

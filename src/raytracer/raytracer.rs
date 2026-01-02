@@ -16,10 +16,7 @@ impl Raytracer {
 
         let camera_settings = state.camera_settings();
 
-        let camera = Camera::new(
-            state.size(),
-            camera_settings,
-        );
+        let camera = Camera::new(state.size(), camera_settings);
 
         let scene = SceneDescriptor::default().scene();
 
@@ -52,10 +49,7 @@ impl Raytracer {
     }
 
     fn set_camera(&mut self, camera_settings: CameraSettings) -> anyhow::Result<()> {
-        let camera = Camera::new(
-            self.state.size(),
-            camera_settings,
-        );
+        let camera = Camera::new(self.state.size(), camera_settings);
 
         self.rendering_thread_pool.set_camera(camera);
 

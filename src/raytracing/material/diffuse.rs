@@ -1,5 +1,5 @@
-use crate::raytracing::material::color::MaterialColor;
 use crate::raytracing::material::MaterialType;
+use crate::raytracing::material::color::MaterialColor;
 
 pub struct DiffuseMaterial {
     albedo: MaterialColor,
@@ -17,9 +17,7 @@ pub struct DiffuseMaterialBuilder {
 
 impl DiffuseMaterialBuilder {
     pub fn new(albedo: MaterialColor) -> Self {
-        Self {
-            albedo,
-        }
+        Self { albedo }
     }
 }
 

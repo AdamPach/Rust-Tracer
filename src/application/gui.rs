@@ -93,22 +93,36 @@ impl eframe::App for Application {
                         ui.label("View at ");
                         ui.horizontal(|ui| {
                             ui.label("X:");
-                            ui.add(egui::DragValue::new(&mut self.state.camera_state.view_at[0]).speed(0.1));
+                            ui.add(
+                                egui::DragValue::new(&mut self.state.camera_state.view_at[0])
+                                    .speed(0.1),
+                            );
                             ui.label("Y:");
-                            ui.add(egui::DragValue::new(&mut self.state.camera_state.view_at[1]).speed(0.1));
+                            ui.add(
+                                egui::DragValue::new(&mut self.state.camera_state.view_at[1])
+                                    .speed(0.1),
+                            );
                             ui.label("Z:");
-                            ui.add(egui::DragValue::new(&mut self.state.camera_state.view_at[2]).speed(0.1));
+                            ui.add(
+                                egui::DragValue::new(&mut self.state.camera_state.view_at[2])
+                                    .speed(0.1),
+                            );
                         });
                         ui.end_row();
 
                         ui.label("Field of View ");
-                        ui.add(egui::Slider::new(&mut self.state.camera_state.fov, 10.0..=180.0).suffix("°"));
+                        ui.add(
+                            egui::Slider::new(&mut self.state.camera_state.fov, 10.0..=180.0)
+                                .suffix("°"),
+                        );
                         ui.end_row();
                     });
 
                 if ui.button("Update Camera").clicked() {
                     self.rendering_thread
-                        .send_command(RaytracerCommand::CameraUpdate(self.state.camera_state.clone().into()));
+                        .send_command(RaytracerCommand::CameraUpdate(
+                            self.state.camera_state.clone().into(),
+                        ));
                 }
             });
     }

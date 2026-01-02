@@ -2,12 +2,12 @@ use crate::io::wavefront::parse_array::parse_array;
 use crate::raytracing::material::MaterialType;
 use crate::raytracing::material::ambient::AmbientMaterialBuilder;
 use crate::raytracing::material::color::{A, B, G, MaterialColor, R};
+use crate::raytracing::material::diffuse::DiffuseMaterialBuilder;
+use crate::raytracing::material::emissive::EmissiveMaterialBuilder;
 use anyhow::Context;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
-use crate::raytracing::material::diffuse::DiffuseMaterialBuilder;
-use crate::raytracing::material::emissive::{EmissiveMaterialBuilder};
 
 pub fn load_mtl<P: AsRef<Path>>(path: P) -> anyhow::Result<Vec<(String, MaterialType)>> {
     let file = File::open(path.as_ref())
@@ -79,7 +79,10 @@ fn parse_ambient(
     Ok(materials)
 }
 
-fn parse_diffuse(coefficients: &str, mut materials: Vec<MtlMaterial>) -> anyhow::Result<Vec<MtlMaterial>> {
+fn parse_diffuse(
+    coefficients: &str,
+    mut materials: Vec<MtlMaterial>,
+) -> anyhow::Result<Vec<MtlMaterial>> {
     let _array = parse_array::<f32, 3, fn() -> anyhow::Error>(
         coefficients,
         || anyhow::anyhow!("Failed to parse diffuse coefficient: expected 3 values, found less"),
@@ -97,7 +100,10 @@ fn parse_diffuse(coefficients: &str, mut materials: Vec<MtlMaterial>) -> anyhow:
     Ok(materials)
 }
 
-fn parse_emissive(coefficients: &str, mut materials: Vec<MtlMaterial>) -> anyhow::Result<Vec<MtlMaterial>> {
+fn parse_emissive(
+    coefficients: &str,
+    mut materials: Vec<MtlMaterial>,
+) -> anyhow::Result<Vec<MtlMaterial>> {
     let array = parse_array::<f32, 3, fn() -> anyhow::Error>(
         coefficients,
         || anyhow::anyhow!("Failed to parse emissive coefficient: expected 3 values, found less"),
@@ -156,7 +162,7 @@ fn convert_mtl_to_material(mtl: MtlMaterial) -> anyhow::Result<MaterialType> {
                 A::new(1.0),
             ))
             .into())
-        },
+        }
         Some(Material::Diffuse) => {
             let Some(diffuse) = mtl.diffuse else {
                 return Err(anyhow::anyhow!(

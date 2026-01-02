@@ -1,10 +1,10 @@
 use crate::core::render::{PixelPosition, RenderPixel};
+use crate::raytracer::shading::shade_hit;
 use crate::raytracer::threadpool::Renderer;
 use crate::raytracing::material::color::{A, B, G, MaterialColor, R};
 use crate::raytracing::{Camera, Scene};
 use arc_swap::ArcSwap;
 use std::sync::Arc;
-use crate::raytracer::shading::shade_hit_with_material;
 
 pub struct RaytracerRenderer {
     scene: ArcSwap<Scene>,
@@ -40,8 +40,8 @@ impl Renderer for RaytracerRenderer {
         let scene = self.scene.load();
 
         if let Some(ray_hit) = scene.find_intersection(ray) {
-            if let Some(material) = scene.get_material(ray_hit.material_id()) {
-                output_color = shade_hit_with_material(material, &scene);
+            if let Some(color) = shade_hit(&ray_hit, &scene) {
+                output_color = color;
             }
         }
 

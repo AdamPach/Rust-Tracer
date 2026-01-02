@@ -1,4 +1,4 @@
-use std::ops::Sub;
+use std::ops::{Add, Sub};
 
 #[derive(Copy, Clone, Debug)]
 pub struct X(f64);
@@ -27,6 +27,14 @@ impl Sub for X {
     }
 }
 
+impl Add for X {
+    type Output = X;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        X(self.0 + rhs.0)
+    }
+}
+
 impl Y {
     pub fn new(y: f64) -> Self {
         Self(y)
@@ -45,6 +53,14 @@ impl Sub for Y {
     }
 }
 
+impl Add for Y {
+    type Output = Y;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Y(self.0 + rhs.0)
+    }
+}
+
 impl Z {
     pub fn new(z: f64) -> Self {
         Self(z)
@@ -60,6 +76,14 @@ impl Sub for Z {
 
     fn sub(self, rhs: Self) -> Self::Output {
         Z(self.0 - rhs.0)
+    }
+}
+
+impl Add for Z {
+    type Output = Z;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Z(self.0 + rhs.0)
     }
 }
 

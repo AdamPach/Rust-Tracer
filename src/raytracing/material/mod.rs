@@ -1,7 +1,7 @@
 use crate::raytracing::material::ambient::AmbientMaterial;
-use std::collections::HashMap;
 use crate::raytracing::material::diffuse::DiffuseMaterial;
 use crate::raytracing::material::emissive::EmissiveMaterial;
+use std::collections::HashMap;
 
 pub mod ambient;
 pub mod color;

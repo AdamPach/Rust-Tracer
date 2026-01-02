@@ -35,6 +35,7 @@ pub struct RayHit {
     barycentric: Barycentric,
     distance: f64,
     material_id: MaterialTypeId,
+    normals: [Vector3; 3],
 }
 
 impl RayHit {
@@ -45,20 +46,35 @@ impl RayHit {
     pub fn material_id(&self) -> MaterialTypeId {
         self.material_id
     }
+
+    pub fn interpolated_normal(&self) -> Vector3 {
+        let u = self.barycentric.u().get();
+        let v = self.barycentric.v().get();
+        let w = 1.0 - u - v;
+
+        (self.normals[0] * w + self.normals[1] * u + self.normals[2] * v).norm()
+    }
 }
 
 pub struct Hit {
     barycentric: Barycentric,
     distance: f64,
     material_id: MaterialTypeId,
+    normals: [Vector3; 3],
 }
 
 impl Hit {
-    pub fn new(barycentric: Barycentric, material_id: MaterialTypeId, distance: f64) -> Self {
+    pub fn new(
+        barycentric: Barycentric,
+        material_id: MaterialTypeId,
+        distance: f64,
+        normals: [Vector3; 3],
+    ) -> Self {
         Self {
             barycentric,
             distance,
             material_id,
+            normals,
         }
     }
 
@@ -71,6 +87,7 @@ impl Hit {
             barycentric: self.barycentric,
             distance: self.distance,
             material_id: self.material_id,
+            normals: self.normals,
         }
     }
 }

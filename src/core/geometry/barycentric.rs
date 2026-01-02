@@ -9,4 +9,12 @@ impl Barycentric {
     pub fn new(u: U, v: V) -> Self {
         Self { u, v }
     }
+
+    pub fn u(&self) -> U {
+        self.u
+    }
+
+    pub fn v(&self) -> V {
+        self.v
+    }
 }

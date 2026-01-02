@@ -1,6 +1,7 @@
 use crate::core::geometry::barycentric::Barycentric;
 use crate::core::geometry::coordinates::{U, V};
 use crate::core::geometry::point::Point;
+use crate::core::geometry::vector::Vector3;
 use crate::raytracing::intersection::Hit;
 use crate::raytracing::intersection::Ray;
 use crate::raytracing::material::MaterialTypeId;
@@ -41,15 +42,16 @@ impl TriangulatedMesh {
 #[derive(Debug, Clone)]
 pub struct Triangle {
     points: [Point; 3],
-    // normals: [Vector3; 3],
+    normals: [Vector3; 3],
     material_id: MaterialTypeId,
 }
 
 impl Triangle {
-    pub fn new(points: [Point; 3], material_id: MaterialTypeId) -> Self {
+    pub fn new(points: [Point; 3], normals: [Vector3; 3], material_id: MaterialTypeId) -> Self {
         Self {
             points,
             material_id,
+            normals,
         }
     }
 
@@ -87,7 +89,12 @@ impl Triangle {
 
         let barycentric = Barycentric::new(u, v);
 
-        Some(Hit::new(barycentric, self.material_id, distance))
+        Some(Hit::new(
+            barycentric,
+            self.material_id,
+            distance,
+            self.normals.clone(),
+        ))
     }
 }
 
