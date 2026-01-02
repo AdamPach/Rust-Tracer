@@ -22,6 +22,8 @@ impl Into<ApplicationState> for RustTracerConfiguration {
             size: self.default_render_size().clone(),
             camera_state: CameraState {
                 position: [10.0, 0.0, 0.0],
+                view_at: [0.0, 0.0, 0.0],
+                fov: 60.0,
             },
         }
     }
@@ -31,13 +33,7 @@ impl Into<RaytracerSettings> for ApplicationState {
     fn into(self) -> RaytracerSettings {
         RaytracerSettings::new(
             self.size,
-            CameraSettings {
-                position: Point::new(
-                    X::new(self.camera_state.position[0]),
-                    Y::new(self.camera_state.position[1]),
-                    Z::new(self.camera_state.position[2]),
-                ),
-            },
+            self.camera_state.into()
         )
     }
 }
@@ -45,4 +41,28 @@ impl Into<RaytracerSettings> for ApplicationState {
 #[derive(Clone)]
 pub struct CameraState {
     pub position: [f64; 3],
+    pub view_at: [f64; 3],
+    pub fov: f64,
+}
+
+impl Into<CameraSettings> for CameraState {
+    fn into(self) -> CameraSettings {
+        let position = Point::new(
+            X::new(self.position[0]),
+            Y::new(self.position[1]),
+            Z::new(self.position[2]),
+        );
+
+        let view_at = Point::new(
+            X::new(self.view_at[0]),
+            Y::new(self.view_at[1]),
+            Z::new(self.view_at[2]),
+        );
+
+        CameraSettings {
+            position,
+            view_at,
+            fov: self.fov * std::f64::consts::PI / 180.0,
+        }
+    }
 }

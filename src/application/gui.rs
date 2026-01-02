@@ -1,10 +1,8 @@
 use crate::application::rendering_thread::RenderingThread;
 use crate::application::state::ApplicationState;
-use crate::core::geometry::coordinates::{X, Y, Z};
-use crate::core::geometry::point::Point;
 use crate::core::render::Render;
 use crate::io::wavefront::WavefrontLoader;
-use crate::raytracer::{CameraSettings, Raytracer, RaytracerCommand};
+use crate::raytracer::{Raytracer, RaytracerCommand};
 use eframe::egui::{Context, TextureHandle};
 use eframe::epaint::{ColorImage, ImageData};
 use eframe::{Frame, egui};
@@ -21,7 +19,7 @@ impl Application {
     pub fn new(into_state: impl Into<ApplicationState>, ctx: &Context) -> Self {
         let state: ApplicationState = into_state.into();
 
-        let mut renderer = Raytracer::new(state.clone());
+        let renderer = Raytracer::new(state.clone());
 
         let result = renderer.set_scene(WavefrontLoader::new(
             env::current_dir().unwrap().join("assets/cubes.obj"),
@@ -69,7 +67,7 @@ impl eframe::App for Application {
             .show(ctx, |ui| {
                 ui.label("Camera");
 
-                egui::Grid::new("camera")
+                egui::Grid::new("camera_grid")
                     .num_columns(2)
                     .spacing([40.0, 4.0])
                     .show(ui, |ui| {
@@ -92,17 +90,25 @@ impl eframe::App for Application {
                             );
                         });
                         ui.end_row();
+                        ui.label("View at ");
+                        ui.horizontal(|ui| {
+                            ui.label("X:");
+                            ui.add(egui::DragValue::new(&mut self.state.camera_state.view_at[0]).speed(0.1));
+                            ui.label("Y:");
+                            ui.add(egui::DragValue::new(&mut self.state.camera_state.view_at[1]).speed(0.1));
+                            ui.label("Z:");
+                            ui.add(egui::DragValue::new(&mut self.state.camera_state.view_at[2]).speed(0.1));
+                        });
+                        ui.end_row();
+
+                        ui.label("Field of View ");
+                        ui.add(egui::Slider::new(&mut self.state.camera_state.fov, 10.0..=180.0).suffix("°"));
+                        ui.end_row();
                     });
 
                 if ui.button("Update Camera").clicked() {
                     self.rendering_thread
-                        .send_command(RaytracerCommand::CameraUpdate(CameraSettings {
-                            position: Point::new(
-                                X::new(self.state.camera_state.position[0]),
-                                Y::new(self.state.camera_state.position[1]),
-                                Z::new(self.state.camera_state.position[2]),
-                            ),
-                        }));
+                        .send_command(RaytracerCommand::CameraUpdate(self.state.camera_state.clone().into()));
                 }
             });
     }

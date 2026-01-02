@@ -4,6 +4,7 @@ use crate::core::geometry::matrix3x3::Matrix3x3;
 use crate::core::geometry::point::Point;
 use crate::core::geometry::vector::Vector3;
 use crate::core::render::{PixelX, PixelY};
+use crate::raytracer::CameraSettings;
 use crate::raytracing::intersection::Ray;
 
 #[derive(Clone)]
@@ -14,23 +15,22 @@ pub struct Camera {
     camera_to_world: Matrix3x3,
 }
 impl Camera {
-    pub fn new(size: Size, view_from: Point, fov: f64) -> Self {
-        let at = Point::new(X::new(0.0), Y::new(0.0), Z::new(0.0));
+    pub fn new(size: Size, camera_settings: CameraSettings) -> Self {
         let up = Vector3::new(X::new(0.0), Y::new(1.0), Z::new(0.0));
 
-        let fy = (size.get_height() / 2.0) / (fov / 2.0).tan();
+        let fy = (size.get_height() / 2.0) / (camera_settings.fov / 2.0).tan();
 
-        let z_c = (view_from - at).norm();
+        let z_c = (camera_settings.position - camera_settings.view_at).norm();
 
         let x_c = up.cross(&z_c).norm();
 
         let y_c = z_c.cross(&x_c).norm();
 
-        let camera_to_world = Matrix3x3::new([x_c, y_c, z_c]).transpose();
+        let camera_to_world = Matrix3x3::from_columns(x_c, y_c, z_c);
 
         Self {
             size,
-            view_from,
+            view_from: camera_settings.position,
             fy,
             camera_to_world,
         }

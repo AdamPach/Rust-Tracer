@@ -26,4 +26,6 @@ impl RaytracerSettings {
 #[derive(Clone)]
 pub struct CameraSettings {
     pub position: Point,
+    pub view_at: Point,
+    pub fov: f64,
 }
