@@ -6,6 +6,8 @@ use anyhow::Context;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
+use crate::raytracing::material::diffuse::DiffuseMaterialBuilder;
+use crate::raytracing::material::emissive::{EmissiveMaterialBuilder};
 
 pub fn load_mtl<P: AsRef<Path>>(path: P) -> anyhow::Result<Vec<(String, MaterialType)>> {
     let file = File::open(path.as_ref())
@@ -26,6 +28,8 @@ pub fn load_mtl<P: AsRef<Path>>(path: P) -> anyhow::Result<Vec<(String, Material
         materials = match prefix {
             "newmtl" => parse_newmtl(data, materials),
             "Ka" => parse_ambient(data, materials)?,
+            "Kd" => parse_diffuse(data, materials)?,
+            "Ke" => parse_emissive(data, materials)?,
             "illum" => parse_illum(data, materials)?,
             _ => continue,
         }
@@ -47,6 +51,8 @@ fn parse_newmtl(material_name: &str, mut materials: Vec<MtlMaterial>) -> Vec<Mtl
         name: material_name.to_string(),
         ambient: None,
         material: None,
+        diffuse: None,
+        emissive: None,
     });
 
     materials
@@ -73,6 +79,42 @@ fn parse_ambient(
     Ok(materials)
 }
 
+fn parse_diffuse(coefficients: &str, mut materials: Vec<MtlMaterial>) -> anyhow::Result<Vec<MtlMaterial>> {
+    let _array = parse_array::<f32, 3, fn() -> anyhow::Error>(
+        coefficients,
+        || anyhow::anyhow!("Failed to parse diffuse coefficient: expected 3 values, found less"),
+        || anyhow::anyhow!("Failed to parse diffuse coefficient in mtllib: invalid float value"),
+    )?;
+
+    let Some(_last_material) = materials.last_mut() else {
+        return Err(anyhow::anyhow!(
+            "Diffuse coefficient defined before any material"
+        ));
+    };
+
+    _last_material.diffuse = Some(_array);
+
+    Ok(materials)
+}
+
+fn parse_emissive(coefficients: &str, mut materials: Vec<MtlMaterial>) -> anyhow::Result<Vec<MtlMaterial>> {
+    let array = parse_array::<f32, 3, fn() -> anyhow::Error>(
+        coefficients,
+        || anyhow::anyhow!("Failed to parse emissive coefficient: expected 3 values, found less"),
+        || anyhow::anyhow!("Failed to parse emissive coefficient in mtllib: invalid float value"),
+    )?;
+
+    let Some(last_material) = materials.last_mut() else {
+        return Err(anyhow::anyhow!(
+            "Emissive coefficient defined before any material"
+        ));
+    };
+
+    last_material.emissive = Some(array);
+
+    Ok(materials)
+}
+
 fn parse_illum(illum: &str, mut materials: Vec<MtlMaterial>) -> anyhow::Result<Vec<MtlMaterial>> {
     let illum_value = illum
         .parse::<u32>()
@@ -83,7 +125,9 @@ fn parse_illum(illum: &str, mut materials: Vec<MtlMaterial>) -> anyhow::Result<V
     };
 
     last_material.material = match illum_value {
-        1 => Some(Material::Ambient),
+        1 => Some(Material::Emissive),
+        2 => Some(Material::Ambient),
+        3 => Some(Material::Diffuse),
         _ => {
             return Err(anyhow::anyhow!(
                 "Illum value '{}' is not supported",
@@ -112,6 +156,38 @@ fn convert_mtl_to_material(mtl: MtlMaterial) -> anyhow::Result<MaterialType> {
                 A::new(1.0),
             ))
             .into())
+        },
+        Some(Material::Diffuse) => {
+            let Some(diffuse) = mtl.diffuse else {
+                return Err(anyhow::anyhow!(
+                    "Material '{}' is missing diffuse coefficient",
+                    mtl.name
+                ));
+            };
+
+            Ok(DiffuseMaterialBuilder::new(MaterialColor::new(
+                R::new(diffuse[0]),
+                G::new(diffuse[1]),
+                B::new(diffuse[2]),
+                A::new(1.0),
+            ))
+            .into())
+        }
+        Some(Material::Emissive) => {
+            let Some(emissive) = mtl.emissive else {
+                return Err(anyhow::anyhow!(
+                    "Material '{}' is missing emissive coefficient",
+                    mtl.name
+                ));
+            };
+
+            Ok(EmissiveMaterialBuilder::new(MaterialColor::new(
+                R::new(emissive[0]),
+                G::new(emissive[1]),
+                B::new(emissive[2]),
+                A::new(1.0),
+            ))
+            .into())
         }
         None => Err(anyhow::anyhow!(
             "Material '{}' is missing illum definition",
@@ -123,9 +199,13 @@ fn convert_mtl_to_material(mtl: MtlMaterial) -> anyhow::Result<MaterialType> {
 struct MtlMaterial {
     name: String,
     ambient: Option<[f32; 3]>,
+    diffuse: Option<[f32; 3]>,
+    emissive: Option<[f32; 3]>,
     material: Option<Material>,
 }
 
 enum Material {
     Ambient,
+    Diffuse,
+    Emissive,
 }

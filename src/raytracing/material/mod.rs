@@ -1,8 +1,12 @@
 use crate::raytracing::material::ambient::AmbientMaterial;
 use std::collections::HashMap;
+use crate::raytracing::material::diffuse::DiffuseMaterial;
+use crate::raytracing::material::emissive::EmissiveMaterial;
 
 pub mod ambient;
 pub mod color;
+pub mod diffuse;
+pub mod emissive;
 
 #[derive(Copy, Clone, Hash, Eq, PartialEq, Debug)]
 pub struct MaterialTypeId(i32);
@@ -13,12 +17,12 @@ impl MaterialTypeId {
     }
 }
 
-#[derive(Clone)]
 pub enum MaterialType {
     Ambient(AmbientMaterial),
+    Diffuse(DiffuseMaterial),
+    Emissive(EmissiveMaterial),
 }
 
-#[derive(Clone)]
 pub struct MaterialsRegistry {
     next_id: i32,
     materials: HashMap<MaterialTypeId, MaterialType>,

@@ -4,6 +4,7 @@ use crate::raytracing::material::color::{A, B, G, MaterialColor, R};
 use crate::raytracing::{Camera, Scene};
 use arc_swap::ArcSwap;
 use std::sync::Arc;
+use crate::raytracer::shading::shade_hit_with_material;
 
 pub struct RaytracerRenderer {
     scene: ArcSwap<Scene>,
@@ -36,9 +37,11 @@ impl Renderer for RaytracerRenderer {
         let mut output_color =
             MaterialColor::new(R::new(0.05), G::new(0.05), B::new(0.05), A::new(1.0));
 
-        if let Some(ray_hit) = self.scene.load().find_intersection(ray) {
-            if let Some(material) = self.scene.load().get_material(ray_hit.material_id()) {
-                output_color = crate::raytracer::shading::shade_hit_with_material(material);
+        let scene = self.scene.load();
+
+        if let Some(ray_hit) = scene.find_intersection(ray) {
+            if let Some(material) = scene.get_material(ray_hit.material_id()) {
+                output_color = shade_hit_with_material(material, &scene);
             }
         }
 

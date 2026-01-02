@@ -22,7 +22,7 @@ impl Application {
         let renderer = Raytracer::new(state.clone());
 
         let result = renderer.set_scene(WavefrontLoader::new(
-            env::current_dir().unwrap().join("assets/cubes.obj"),
+            env::current_dir().unwrap().join("assets/cubes_and_sun.obj"),
         ));
 
         if let Err(e) = result {
