@@ -1,22 +1,22 @@
 use crate::raytracing::material::MaterialType;
-use crate::raytracing::material::color::MaterialColor;
+use crate::raytracing::material::color::Color;
 
 pub struct DiffuseMaterial {
-    albedo: MaterialColor,
+    albedo: Color,
 }
 
 impl DiffuseMaterial {
-    pub fn albedo(&self) -> MaterialColor {
+    pub fn albedo(&self) -> Color {
         self.albedo.clone()
     }
 }
 
 pub struct DiffuseMaterialBuilder {
-    albedo: MaterialColor,
+    albedo: Color,
 }
 
 impl DiffuseMaterialBuilder {
-    pub fn new(albedo: MaterialColor) -> Self {
+    pub fn new(albedo: Color) -> Self {
         Self { albedo }
     }
 }

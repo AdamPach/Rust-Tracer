@@ -1,0 +1,46 @@
+use crate::raytracer::shading::sampling::cos_weighted_hemisphere_sample;
+use crate::raytracer::shading::{TracingContext, trace_ray};
+use crate::raytracing::Ray;
+use crate::raytracing::material::color::{A, B, Color, G, R};
+use crate::raytracing::material::diffuse::DiffuseMaterial;
+use std::f32::consts::PI;
+
+pub fn diffuse_material_shader(material: &DiffuseMaterial, mut ctx: TracingContext) -> Color {
+    let normal = ctx.ray_hit.unwrap().interpolated_normal();
+
+    let sample = cos_weighted_hemisphere_sample(&normal, &mut ctx.random);
+
+    if sample.cos_theta <= 1e-18 {
+        return Color::new(R::new(0.0), G::new(0.0), B::new(0.0), A::new(1.0));
+    }
+
+    let albedo = material.albedo();
+
+    let brdf = Color::new(
+        albedo.r() / PI,
+        albedo.g() / PI,
+        albedo.b() / PI,
+        A::new(1.0),
+    );
+
+    let ray_hit = ctx.ray_hit.unwrap();
+
+    let hit_point = ray_hit.hit_point();
+
+    let new_ray = Ray::new(hit_point, sample.sampled_direction, 1e-6);
+
+    let incoming_radiance = trace_ray(
+        new_ray,
+        TracingContext {
+            depth: ctx.depth + 1,
+            ..ctx
+        },
+    );
+
+    Color::new(
+        brdf.r() * incoming_radiance.r() * sample.cos_theta as f32 / sample.pdf as f32,
+        brdf.g() * incoming_radiance.g() * sample.cos_theta as f32 / sample.pdf as f32,
+        brdf.b() * incoming_radiance.b() * sample.cos_theta as f32 / sample.pdf as f32,
+        A::new(1.0),
+    )
+}

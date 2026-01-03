@@ -39,15 +39,15 @@ impl Vector3 {
         }
     }
 
-    pub fn get_x(&self) -> X {
+    pub fn x(&self) -> X {
         self.x
     }
 
-    pub fn get_y(&self) -> Y {
+    pub fn y(&self) -> Y {
         self.y
     }
 
-    pub fn get_z(&self) -> Z {
+    pub fn z(&self) -> Z {
         self.z
     }
 }

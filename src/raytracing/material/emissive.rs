@@ -1,22 +1,22 @@
 use crate::raytracing::material::MaterialType;
-use crate::raytracing::material::color::MaterialColor;
+use crate::raytracing::material::color::Color;
 
 pub struct EmissiveMaterial {
-    emission: MaterialColor,
+    emission: Color,
 }
 
 impl EmissiveMaterial {
-    pub fn emission(&self) -> MaterialColor {
+    pub fn emission(&self) -> Color {
         self.emission.clone()
     }
 }
 
 pub struct EmissiveMaterialBuilder {
-    emission: MaterialColor,
+    emission: Color,
 }
 
 impl EmissiveMaterialBuilder {
-    pub fn new(emission: MaterialColor) -> Self {
+    pub fn new(emission: Color) -> Self {
         Self { emission }
     }
 }

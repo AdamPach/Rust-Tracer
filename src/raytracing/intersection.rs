@@ -1,4 +1,5 @@
 use crate::core::geometry::barycentric::Barycentric;
+use crate::core::geometry::coordinates::{X, Y, Z};
 use crate::core::geometry::point::Point;
 use crate::core::geometry::vector::Vector3;
 use crate::raytracing::material::MaterialTypeId;
@@ -57,8 +58,12 @@ impl RayHit {
         (self.normals[0] * w + self.normals[1] * u + self.normals[2] * v).norm()
     }
 
-    pub fn ray(&self) -> &Ray {
-        &self.ray
+    pub fn hit_point(&self) -> Point {
+        Point::new(
+            X::new(self.ray.origin().x().get() + self.ray.direction().x().get() * self.distance),
+            Y::new(self.ray.origin().y().get() + self.ray.direction().y().get() * self.distance),
+            Z::new(self.ray.origin().z().get() + self.ray.direction().z().get() * self.distance),
+        )
     }
 }
 

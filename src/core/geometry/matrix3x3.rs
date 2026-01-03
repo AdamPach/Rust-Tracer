@@ -7,27 +7,23 @@ pub struct Matrix3x3 {
 }
 
 impl Matrix3x3 {
-    pub fn new(data: [Vector3; 3]) -> Matrix3x3 {
-        Matrix3x3 { data }
-    }
-
     pub fn from_columns(col0: Vector3, col1: Vector3, col2: Vector3) -> Matrix3x3 {
         Matrix3x3 {
             data: [
                 Vector3::new(
-                    X::new(col0.get_x().get()),
-                    Y::new(col1.get_x().get()),
-                    Z::new(col2.get_x().get()),
+                    X::new(col0.x().get()),
+                    Y::new(col1.x().get()),
+                    Z::new(col2.x().get()),
                 ),
                 Vector3::new(
-                    X::new(col0.get_y().get()),
-                    Y::new(col1.get_y().get()),
-                    Z::new(col2.get_y().get()),
+                    X::new(col0.y().get()),
+                    Y::new(col1.y().get()),
+                    Z::new(col2.y().get()),
                 ),
                 Vector3::new(
-                    X::new(col0.get_z().get()),
-                    Y::new(col1.get_z().get()),
-                    Z::new(col2.get_z().get()),
+                    X::new(col0.z().get()),
+                    Y::new(col1.z().get()),
+                    Z::new(col2.z().get()),
                 ),
             ],
         }

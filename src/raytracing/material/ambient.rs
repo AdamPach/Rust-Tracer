@@ -1,21 +1,21 @@
 use crate::raytracing::material::MaterialType;
-use crate::raytracing::material::color::MaterialColor;
+use crate::raytracing::material::color::Color;
 
 #[derive(Clone)]
 pub struct AmbientMaterial {
-    color: MaterialColor,
+    color: Color,
 }
 
 impl AmbientMaterial {
-    pub fn get_color(&self) -> MaterialColor {
+    pub fn get_color(&self) -> Color {
         self.color.clone()
     }
 }
 
-pub struct AmbientMaterialBuilder(MaterialColor);
+pub struct AmbientMaterialBuilder(Color);
 
 impl AmbientMaterialBuilder {
-    pub fn new(color: MaterialColor) -> Self {
+    pub fn new(color: Color) -> Self {
         AmbientMaterialBuilder(color)
     }
 }

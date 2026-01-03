@@ -1,7 +1,7 @@
 use crate::io::wavefront::parse_array::parse_array;
 use crate::raytracing::material::MaterialType;
 use crate::raytracing::material::ambient::AmbientMaterialBuilder;
-use crate::raytracing::material::color::{A, B, G, MaterialColor, R};
+use crate::raytracing::material::color::{A, B, Color, G, R};
 use crate::raytracing::material::diffuse::DiffuseMaterialBuilder;
 use crate::raytracing::material::emissive::EmissiveMaterialBuilder;
 use anyhow::Context;
@@ -155,7 +155,7 @@ fn convert_mtl_to_material(mtl: MtlMaterial) -> anyhow::Result<MaterialType> {
                 ));
             };
 
-            Ok(AmbientMaterialBuilder::new(MaterialColor::new(
+            Ok(AmbientMaterialBuilder::new(Color::new(
                 R::new(ambient[0]),
                 G::new(ambient[1]),
                 B::new(ambient[2]),
@@ -171,7 +171,7 @@ fn convert_mtl_to_material(mtl: MtlMaterial) -> anyhow::Result<MaterialType> {
                 ));
             };
 
-            Ok(DiffuseMaterialBuilder::new(MaterialColor::new(
+            Ok(DiffuseMaterialBuilder::new(Color::new(
                 R::new(diffuse[0]),
                 G::new(diffuse[1]),
                 B::new(diffuse[2]),
@@ -187,7 +187,7 @@ fn convert_mtl_to_material(mtl: MtlMaterial) -> anyhow::Result<MaterialType> {
                 ));
             };
 
-            Ok(EmissiveMaterialBuilder::new(MaterialColor::new(
+            Ok(EmissiveMaterialBuilder::new(Color::new(
                 R::new(emissive[0]),
                 G::new(emissive[1]),
                 B::new(emissive[2]),
