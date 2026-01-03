@@ -6,7 +6,9 @@ use crate::raytracing::material::diffuse::DiffuseMaterial;
 use std::f32::consts::PI;
 
 pub fn diffuse_material_shader(material: &DiffuseMaterial, mut ctx: TracingContext) -> Color {
-    let normal = ctx.ray_hit.unwrap().interpolated_normal();
+    let (ray_hit, geometry) = ctx.hit.unwrap();
+    
+    let normal = geometry.interpolate_normal(ray_hit.barycentric());
 
     let sample = cos_weighted_hemisphere_sample(&normal, &mut ctx.random);
 
@@ -23,16 +25,13 @@ pub fn diffuse_material_shader(material: &DiffuseMaterial, mut ctx: TracingConte
         A::new(1.0),
     );
 
-    let ray_hit = ctx.ray_hit.unwrap();
-
     let hit_point = ray_hit.hit_point();
 
-    let new_ray = Ray::new(hit_point, sample.sampled_direction, 1e-6);
-
     let incoming_radiance = trace_ray(
-        new_ray,
+        Ray::new(hit_point, sample.sampled_direction, 1e-6),
         TracingContext {
             depth: ctx.depth + 1,
+            hit: None,
             ..ctx
         },
     );

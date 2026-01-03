@@ -2,10 +2,10 @@ use crate::core::geometry::barycentric::Barycentric;
 use crate::core::geometry::coordinates::{U, V};
 use crate::core::geometry::point::Point;
 use crate::core::geometry::vector::Vector3;
+use crate::raytracing::geometry::{Geometry, GeometryPrimitiveId};
 use crate::raytracing::intersection::Hit;
 use crate::raytracing::intersection::Ray;
 use crate::raytracing::material::MaterialTypeId;
-use crate::raytracing::scene::Geometry;
 
 #[derive(Clone)]
 pub struct TriangulatedMesh {
@@ -16,8 +16,8 @@ impl TriangulatedMesh {
     pub fn intersect(&self, ray: &Ray) -> Option<Hit> {
         let mut intersection: Option<Hit> = None;
 
-        for triangle in &self.triangles {
-            let hit = match triangle.intersect(ray) {
+        for (id, triangle) in self.triangles.iter().enumerate() {
+            let hit = match triangle.intersect(ray, TriangleId(id)) {
                 Some(hit) => hit,
                 None => continue,
             };
@@ -37,7 +37,13 @@ impl TriangulatedMesh {
 
         intersection
     }
+
+    pub fn get_triangle(&self, id: &TriangleId) -> &Triangle {
+        &self.triangles[id.0]
+    }
 }
+
+pub struct TriangleId(usize);
 
 #[derive(Debug, Clone)]
 pub struct Triangle {
@@ -55,7 +61,7 @@ impl Triangle {
         }
     }
 
-    pub fn intersect(&self, ray: &Ray) -> Option<Hit> {
+    pub fn intersect(&self, ray: &Ray, id: TriangleId) -> Option<Hit> {
         let e1 = self.points[1] - self.points[0];
         let e2 = self.points[2] - self.points[0];
 
@@ -92,10 +98,21 @@ impl Triangle {
         Some(Hit::new(
             barycentric,
             ray.clone(),
-            self.material_id,
             distance,
-            self.normals.clone(),
+            GeometryPrimitiveId::TriangleId(id),
         ))
+    }
+
+    pub fn material_id(&self) -> MaterialTypeId {
+        self.material_id
+    }
+    
+    pub fn interpolate_normal(&self, barycentric_coords: &Barycentric) -> Vector3 {
+        let u = barycentric_coords.u().get();
+        let v = barycentric_coords.v().get();
+        let w = 1.0 - u - v;
+
+        self.normals[0] * w + self.normals[1] * u + self.normals[2] * v
     }
 }
 

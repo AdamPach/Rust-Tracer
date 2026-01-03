@@ -1,14 +1,10 @@
+use crate::raytracing::geometry::{Geometry, GeometryIndex, GeometryPrimitive, GeometryRegistry};
 use crate::raytracing::intersection::Ray;
 use crate::raytracing::intersection::RayHit;
 use crate::raytracing::material::{MaterialType, MaterialTypeId, MaterialsRegistry};
-use crate::raytracing::triangulated_mesh::TriangulatedMesh;
 
 pub trait SceneBuilder {
     fn build_scene(self) -> anyhow::Result<Scene>;
-}
-
-pub enum Geometry {
-    TriangulatedMesh(TriangulatedMesh),
 }
 
 pub struct Scene {
@@ -23,8 +19,8 @@ impl Scene {
     pub fn find_intersection(&self, ray: Ray) -> Option<RayHit> {
         let mut intersection: Option<RayHit> = None;
 
-        for object in &self.scene_descriptor.objects {
-            let hit = match object {
+        for (id, geometry) in self.scene_descriptor.geometry.iter() {
+            let hit = match geometry {
                 Geometry::TriangulatedMesh(m) => match m.intersect(&ray) {
                     Some(hit) => hit,
                     None => continue,
@@ -32,7 +28,7 @@ impl Scene {
             };
 
             let Some(nearest_ray_hit) = intersection else {
-                intersection = Some(hit.ray_hit());
+                intersection = Some(hit.ray_hit(id.clone()));
                 continue;
             };
 
@@ -41,28 +37,28 @@ impl Scene {
                 continue;
             }
 
-            intersection = Some(hit.ray_hit());
+            intersection = Some(hit.ray_hit(id.clone()));
         }
 
         intersection
     }
+
+    pub fn get_geometry(&self, index: &GeometryIndex) -> GeometryPrimitive<'_> {
+        self.scene_descriptor.geometry.get(index)
+    }
 }
 
 pub struct SceneDescriptor {
-    objects: Vec<Geometry>,
+    geometry: GeometryRegistry,
     materials: MaterialsRegistry,
 }
 
 impl SceneDescriptor {
-    pub fn new(materials: MaterialsRegistry) -> Self {
+    pub fn new(geometry: GeometryRegistry, materials: MaterialsRegistry) -> Self {
         Self {
-            objects: Vec::new(),
+            geometry,
             materials,
         }
-    }
-
-    pub fn add_object<T: Into<Geometry>>(&mut self, object: T) {
-        self.objects.push(object.into());
     }
 
     pub fn scene(self) -> Scene {
@@ -75,7 +71,7 @@ impl SceneDescriptor {
 impl Default for SceneDescriptor {
     fn default() -> Self {
         Self {
-            objects: Vec::new(),
+            geometry: GeometryRegistry::new(),
             materials: MaterialsRegistry::new(),
         }
     }

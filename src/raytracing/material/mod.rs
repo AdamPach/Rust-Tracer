@@ -11,12 +11,6 @@ pub mod emissive;
 #[derive(Copy, Clone, Hash, Eq, PartialEq, Debug)]
 pub struct MaterialTypeId(i32);
 
-impl MaterialTypeId {
-    pub fn new(material_id: i32) -> Self {
-        Self(material_id)
-    }
-}
-
 pub enum MaterialType {
     Ambient(AmbientMaterial),
     Diffuse(DiffuseMaterial),
@@ -37,7 +31,7 @@ impl MaterialsRegistry {
     }
 
     pub fn add(&mut self, material: impl Into<MaterialType>) -> MaterialTypeId {
-        let id = MaterialTypeId::new(self.next_id);
+        let id = MaterialTypeId(self.next_id);
         self.materials.insert(id, material.into());
         self.next_id += 1;
         id

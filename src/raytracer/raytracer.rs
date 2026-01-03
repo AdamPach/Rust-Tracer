@@ -22,7 +22,7 @@ impl Raytracer {
 
         let renderer = RaytracerRenderer::new(scene, camera);
 
-        let rendering_thread_pool = ThreadPool::new(32, renderer);
+        let rendering_thread_pool = ThreadPool::new(64, renderer);
 
         Self {
             state,

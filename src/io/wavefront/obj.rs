@@ -4,7 +4,7 @@ use crate::core::geometry::vector::Vector3;
 use crate::io::wavefront::mtl::load_mtl;
 use crate::io::wavefront::parse_array::parse_array;
 use crate::raytracing::material::{MaterialTypeId, MaterialsRegistry};
-use crate::raytracing::{SceneDescriptor, Triangle, TriangulatedMeshBuilder};
+use crate::raytracing::{GeometryRegistry, SceneDescriptor, Triangle, TriangulatedMeshBuilder};
 use anyhow::Context;
 use std::collections::HashMap;
 use std::fs::File;
@@ -58,13 +58,16 @@ pub fn load_obj<P: AsRef<Path>>(path: P) -> anyhow::Result<SceneDescriptor> {
         }
     }
 
-    let mut scene_descriptor = SceneDescriptor::new(obj_data.materials_registry);
+    let mut geometry_registry = GeometryRegistry::new();
 
     for mesh_builder in obj_data.geometry {
-        scene_descriptor.add_object(mesh_builder);
+        geometry_registry.add(mesh_builder);
     }
 
-    Ok(scene_descriptor)
+    Ok(SceneDescriptor::new(
+        geometry_registry,
+        obj_data.materials_registry,
+    ))
 }
 
 fn parse_vertex(vertices: &str, mut data: ObjData) -> anyhow::Result<ObjData> {
