@@ -54,7 +54,7 @@ fn rendering_thread(
 
             let render = renderer.send_command(RaytracerCommand::RenderFrame);
 
-            if let RaytracerResponse::RenderComplete(render) = render {
+            if let Ok(RaytracerResponse::RenderComplete(render)) = render {
                 let _ = render_sender.send(render);
             }
         }

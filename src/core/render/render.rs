@@ -35,6 +35,13 @@ impl RenderAccumulator {
         }
     }
 
+    pub fn clear(&mut self) {
+        for i in 0..self.pixels.len() {
+            self.pixels[i] = Color::black();
+        }
+        self.count = 0;
+    }
+
     fn accumulate_pixel(&mut self, pixel_position: &PixelPosition, color: Color) -> Color {
         let index = pixel_position.index(&self.size.get_width());
 

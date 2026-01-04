@@ -1,8 +1,7 @@
 use crate::application::rendering_thread::RenderingThread;
 use crate::application::state::ApplicationState;
 use crate::core::render::Render;
-use crate::io::wavefront::WavefrontLoader;
-use crate::raytracer::{Raytracer, RaytracerCommand};
+use crate::raytracer::{Raytracer, RaytracerCommand, SceneLoadingDta};
 use eframe::egui::{Context, TextureHandle};
 use eframe::epaint::{ColorImage, ImageData};
 use eframe::{Frame, egui};
@@ -19,10 +18,12 @@ impl Application {
     pub fn new(into_state: impl Into<ApplicationState>, ctx: &Context) -> Self {
         let state: ApplicationState = into_state.into();
 
-        let renderer = Raytracer::new(state.clone());
+        let mut renderer = Raytracer::new(state.clone());
 
-        let result = renderer.set_scene(WavefrontLoader::new(
-            env::current_dir().unwrap().join("assets/cubes_and_sun.obj"),
+        let result = renderer.send_command(RaytracerCommand::SceneUpdate(
+            SceneLoadingDta::WavefrontObj {
+                path: env::current_dir().unwrap().join("assets/cubes_and_sun.obj"),
+            },
         ));
 
         if let Err(e) = result {
