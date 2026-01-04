@@ -7,7 +7,7 @@ pub mod ambient;
 pub mod diffuse;
 pub mod emissive;
 
-#[derive(Copy, Clone, Hash, Eq, PartialEq, Debug)]
+#[derive(Eq, Hash, PartialEq, Copy, Clone, Debug)]
 pub struct MaterialTypeId(i32);
 
 pub enum MaterialType {

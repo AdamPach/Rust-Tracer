@@ -33,10 +33,6 @@ impl Color {
     pub fn b(&self) -> B {
         self.b.clone()
     }
-
-    pub fn a(&self) -> A {
-        self.a.clone()
-    }
 }
 
 impl Add<Color> for Color {

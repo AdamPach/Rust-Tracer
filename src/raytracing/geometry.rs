@@ -19,7 +19,7 @@ impl Geometry {
     }
 }
 
-#[derive(PartialEq, Eq, Hash, Clone, Copy)]
+#[derive(Eq, Hash, PartialEq, Copy, Clone)]
 pub struct GeometryId(i32);
 
 pub enum GeometryPrimitive<'a> {

@@ -7,13 +7,13 @@ use crate::core::render::{PixelX, PixelY};
 use crate::raytracer::CameraSettings;
 use crate::raytracing::intersection::Ray;
 
-#[derive(Clone)]
 pub struct Camera {
     size: Size,
     view_from: Point,
     fy: f64,
     camera_to_world: Matrix3x3,
 }
+
 impl Camera {
     pub fn new(size: Size, camera_settings: CameraSettings) -> Self {
         let up = Vector3::new(X::new(0.0), Y::new(1.0), Z::new(0.0));
