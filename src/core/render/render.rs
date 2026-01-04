@@ -1,4 +1,5 @@
-use crate::core::render::{PixelX, PixelY, RGBA};
+use crate::core::render::color::{Color, ColorU8};
+use crate::core::render::{PixelX, PixelY};
 use crate::{Size, Width};
 
 pub enum RenderState {
@@ -6,37 +7,69 @@ pub enum RenderState {
     Completed,
 }
 
-#[derive(Clone)]
-pub struct Render {
+pub struct RenderAccumulator {
     size: Size,
-    pixels_rgba: Vec<u8>,
-    x_pos: usize,
-    y_pos: usize,
-    missing_pixels: u32,
+    pixels: Vec<Color>,
+    count: u32,
 }
 
-impl Render {
+impl RenderAccumulator {
     pub fn new(size: Size) -> Self {
         let render_size = size.get_width() * size.get_height();
 
         Self {
             size,
-            pixels_rgba: vec![0; render_size * 4],
-            x_pos: 0,
-            y_pos: 0,
+            pixels: vec![Color::black(); render_size * 4],
+            count: 0,
+        }
+    }
+
+    pub fn accumulated_render(&mut self) -> AccumulatedRender<'_> {
+        let render_size = self.size.get_width() * self.size.get_height();
+        let size = self.size.clone();
+
+        AccumulatedRender {
+            accumulator: self,
+            render: Render::new(size),
             missing_pixels: render_size as u32,
         }
     }
 
+    fn accumulate_pixel(&mut self, pixel_position: &PixelPosition, color: Color) -> Color {
+        let index = pixel_position.index(&self.size.get_width());
+
+        let accumulated_color = &self.pixels[index];
+
+        let new_color =
+            (accumulated_color.clone() * self.count as f64 + color) / (self.count as f64 + 1.0);
+
+        self.pixels[index] = new_color;
+
+        new_color
+    }
+}
+
+pub struct AccumulatedRender<'a> {
+    accumulator: &'a mut RenderAccumulator,
+    render: Render,
+    missing_pixels: u32,
+}
+
+impl AccumulatedRender<'_> {
+    pub fn iterator(&self) -> RenderIterator {
+        RenderIterator {
+            size: self.accumulator.size.clone(),
+            x_pos: 0,
+            y_pos: 0,
+        }
+    }
+
     pub fn add_pixel(&mut self, pixel: RenderPixel) -> RenderState {
-        let index = 4 * pixel.index(&self.size.get_width());
+        let position = pixel.position;
 
-        let color = pixel.color();
+        let color = self.accumulator.accumulate_pixel(&position, pixel.color);
 
-        self.pixels_rgba[index] = color.r();
-        self.pixels_rgba[index + 1] = color.g();
-        self.pixels_rgba[index + 2] = color.b();
-        self.pixels_rgba[index + 3] = color.a();
+        self.render.add_pixel(&position, color);
 
         self.missing_pixels -= 1;
 
@@ -46,12 +79,19 @@ impl Render {
         }
     }
 
-    pub fn get_render_data(self) -> (Size, Vec<u8>) {
-        (self.size, self.pixels_rgba)
+    pub fn get_render(self) -> Render {
+        self.accumulator.count += 1;
+        self.render
     }
 }
 
-impl Iterator for Render {
+pub struct RenderIterator {
+    size: Size,
+    x_pos: usize,
+    y_pos: usize,
+}
+
+impl Iterator for RenderIterator {
     type Item = PixelPosition;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -75,19 +115,40 @@ impl Iterator for Render {
     }
 }
 
-pub struct RenderPixel {
-    color: RGBA,
-    position: PixelPosition,
+pub struct Render {
+    size: Size,
+    pixels_rgba: Vec<u8>,
 }
 
-impl RenderPixel {
-    pub fn color(self) -> RGBA {
-        self.color
+impl Render {
+    pub fn new(size: Size) -> Self {
+        let render_size = size.get_width() * size.get_height();
+
+        Self {
+            size,
+            pixels_rgba: vec![0; render_size * 4],
+        }
     }
 
-    pub fn index(&self, width: &Width) -> usize {
-        self.position.x + self.position.y * width.get()
+    fn add_pixel<T: Into<ColorU8>>(&mut self, pixel_position: &PixelPosition, pixel: T) {
+        let index = 4 * pixel_position.index(&self.size.get_width());
+
+        let (r, g, b, a) = pixel.into().get();
+
+        self.pixels_rgba[index] = r;
+        self.pixels_rgba[index + 1] = g;
+        self.pixels_rgba[index + 2] = b;
+        self.pixels_rgba[index + 3] = a;
     }
+
+    pub fn get_render_data(self) -> (Size, Vec<u8>) {
+        (self.size, self.pixels_rgba)
+    }
+}
+
+pub struct RenderPixel {
+    color: Color,
+    position: PixelPosition,
 }
 
 pub struct PixelPosition {
@@ -96,13 +157,17 @@ pub struct PixelPosition {
 }
 
 impl PixelPosition {
-    pub fn create_render_pixel(self, color: impl Into<RGBA>) -> RenderPixel {
+    pub fn create_render_pixel(self, color: Color) -> RenderPixel {
         RenderPixel {
-            color: color.into(),
+            color,
             position: self,
         }
     }
     pub fn get_pixel_coordinates(&self) -> (PixelX, PixelY) {
         (PixelX::new(self.x as f64), PixelY::new(self.y as f64))
+    }
+
+    fn index(&self, width: &Width) -> usize {
+        self.x + self.y * width.get()
     }
 }

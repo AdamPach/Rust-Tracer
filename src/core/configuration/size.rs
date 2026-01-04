@@ -6,7 +6,7 @@ pub struct Width(usize);
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub struct Height(usize);
 
-#[derive(Clone, Eq, PartialEq)]
+#[derive(Clone, Copy, Eq, PartialEq)]
 pub struct Size {
     height: Height,
     width: Width,

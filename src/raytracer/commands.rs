@@ -8,5 +8,5 @@ pub enum RaytracerCommand {
 
 pub enum RaytracerResponse {
     RenderComplete(Render),
-    SettingsUpdated,
+    RendererUpdated,
 }

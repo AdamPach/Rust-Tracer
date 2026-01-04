@@ -1,5 +1,5 @@
+use crate::core::render::color::Color;
 use crate::raytracing::material::MaterialType;
-use crate::raytracing::material::color::Color;
 
 #[derive(Clone)]
 pub struct AmbientMaterial {

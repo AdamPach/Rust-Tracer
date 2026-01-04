@@ -106,7 +106,7 @@ impl Triangle {
     pub fn material_id(&self) -> MaterialTypeId {
         self.material_id
     }
-    
+
     pub fn interpolate_normal(&self, barycentric_coords: &Barycentric) -> Vector3 {
         let u = barycentric_coords.u().get();
         let v = barycentric_coords.v().get();

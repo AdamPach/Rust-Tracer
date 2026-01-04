@@ -1,9 +1,9 @@
+use crate::core::geometry::barycentric::Barycentric;
+use crate::core::geometry::vector::Vector3;
 use crate::raytracing::Triangle;
 use crate::raytracing::material::MaterialTypeId;
 use crate::raytracing::triangulated_mesh::{TriangleId, TriangulatedMesh};
 use std::collections::HashMap;
-use crate::core::geometry::barycentric::Barycentric;
-use crate::core::geometry::vector::Vector3;
 
 pub enum Geometry {
     TriangulatedMesh(TriangulatedMesh),
@@ -35,7 +35,9 @@ impl GeometryPrimitive<'_> {
 
     pub fn interpolate_normal(&self, barycentric_coords: &Barycentric) -> Vector3 {
         match self {
-            GeometryPrimitive::Triangle(triangle) => triangle.interpolate_normal(barycentric_coords),
+            GeometryPrimitive::Triangle(triangle) => {
+                triangle.interpolate_normal(barycentric_coords)
+            }
         }
     }
 }

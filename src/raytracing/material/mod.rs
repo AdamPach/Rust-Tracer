@@ -4,7 +4,6 @@ use crate::raytracing::material::emissive::EmissiveMaterial;
 use std::collections::HashMap;
 
 pub mod ambient;
-pub mod color;
 pub mod diffuse;
 pub mod emissive;
 

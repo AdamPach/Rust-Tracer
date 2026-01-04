@@ -1,8 +1,8 @@
+use crate::core::render::color::{A, B, Color, G, R};
 use crate::raytracer::shading::ambient::ambient_material_shader;
 use crate::raytracer::shading::emissive::emissive_material_shader;
 use crate::raytracer::shading::lambert_diffuse::diffuse_material_shader;
 use crate::raytracing::material::MaterialType;
-use crate::raytracing::material::color::{A, B, Color, G, R};
 use crate::raytracing::{GeometryPrimitive, Ray, RayHit, Scene};
 use rand::prelude::ThreadRng;
 

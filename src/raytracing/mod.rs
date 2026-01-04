@@ -6,7 +6,7 @@ mod scene;
 mod triangulated_mesh;
 
 pub use camera::Camera;
-pub use geometry::{GeometryRegistry, GeometryPrimitive};
+pub use geometry::{GeometryPrimitive, GeometryRegistry};
 pub use intersection::{Ray, RayHit};
 pub use scene::{Scene, SceneBuilder, SceneDescriptor};
 pub use triangulated_mesh::{Triangle, TriangulatedMeshBuilder};

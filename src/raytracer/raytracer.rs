@@ -1,4 +1,4 @@
-use crate::core::render::Render;
+use crate::core::render::{Render, RenderAccumulator};
 use crate::raytracer::raytracer_renderer::RaytracerRenderer;
 use crate::raytracer::settings::RaytracerSettings;
 use crate::raytracer::threadpool::ThreadPool;
@@ -6,17 +6,18 @@ use crate::raytracer::{CameraSettings, RaytracerCommand, RaytracerResponse};
 use crate::raytracing::{Camera, SceneBuilder, SceneDescriptor};
 
 pub struct Raytracer {
-    state: RaytracerSettings,
+    settings: RaytracerSettings,
     rendering_thread_pool: ThreadPool<RaytracerRenderer>,
+    accumulator: RenderAccumulator,
 }
 
 impl Raytracer {
     pub fn new(state: impl Into<RaytracerSettings>) -> Self {
-        let state: RaytracerSettings = state.into();
+        let settings: RaytracerSettings = state.into();
 
-        let camera_settings = state.camera_settings();
+        let camera_settings = settings.camera_settings();
 
-        let camera = Camera::new(state.size(), camera_settings);
+        let camera = Camera::new(settings.size(), camera_settings);
 
         let scene = SceneDescriptor::default().scene();
 
@@ -24,9 +25,12 @@ impl Raytracer {
 
         let rendering_thread_pool = ThreadPool::new(64, renderer);
 
+        let accumulator = RenderAccumulator::new(settings.size().clone());
+
         Self {
-            state,
+            settings,
             rendering_thread_pool,
+            accumulator,
         }
     }
 
@@ -43,22 +47,24 @@ impl Raytracer {
             RaytracerCommand::RenderFrame => RaytracerResponse::RenderComplete(self.render_image()),
             RaytracerCommand::CameraUpdate(settings) => {
                 self.set_camera(settings).unwrap();
-                RaytracerResponse::SettingsUpdated
+                RaytracerResponse::RendererUpdated
             }
         }
     }
 
     fn set_camera(&mut self, camera_settings: CameraSettings) -> anyhow::Result<()> {
-        let camera = Camera::new(self.state.size(), camera_settings);
+        let camera = Camera::new(self.settings.size(), camera_settings);
 
         self.rendering_thread_pool.set_camera(camera);
 
         Ok(())
     }
 
-    fn render_image(&self) -> Render {
-        let render = Render::new(self.state.size().clone());
+    fn render_image(&mut self) -> Render {
+        let mut test = self.accumulator.accumulated_render();
 
-        self.rendering_thread_pool.render(render)
+        test = self.rendering_thread_pool.render(test);
+
+        test.get_render()
     }
 }

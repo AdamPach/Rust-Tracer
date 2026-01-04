@@ -1,4 +1,4 @@
-use crate::core::render::{PixelPosition, Render, RenderPixel};
+use crate::core::render::{AccumulatedRender, PixelPosition, RenderIterator, RenderPixel};
 use std::ops::Deref;
 use std::sync::mpsc::{Receiver, Sender, SyncSender};
 use std::sync::{Arc, Mutex};
@@ -8,8 +8,8 @@ pub trait Renderer {
 }
 
 pub struct ThreadPool<T> {
-    pixel_position_sender: SyncSender<PixelPosition>,
-    sync_render_sender: SyncSender<(Render, SyncSender<Render>)>,
+    render_pixel_receiver: Receiver<RenderPixel>,
+    render_iterator_sender: SyncSender<RenderIterator>,
     renderer: Arc<T>,
 }
 
@@ -25,8 +25,8 @@ where
         let (render_pixel_sender, render_pixel_receiver) =
             std::sync::mpsc::channel::<RenderPixel>();
 
-        let (sync_render_sender, sync_render_receiver) =
-            std::sync::mpsc::sync_channel::<(Render, SyncSender<Render>)>(0);
+        let (render_iterator_sender, render_iterator_receiver) =
+            std::sync::mpsc::sync_channel::<RenderIterator>(0);
 
         let pixel_position_receiver = Arc::new(Mutex::new(pixel_position_receiver));
 
@@ -40,67 +40,32 @@ where
             spawn_rendering_thread(renderer, pixel_position_receiver, render_pixel_sender);
         }
 
-        spawn_sync_thread(sync_render_receiver, render_pixel_receiver);
+        spawn_iterator_thread(render_iterator_receiver, pixel_position_sender);
 
         Self {
-            pixel_position_sender,
-            sync_render_sender,
+            render_pixel_receiver,
+            render_iterator_sender,
             renderer,
         }
     }
 
-    pub fn render(&self, mut render: Render) -> Render {
-        let (reply_sender, reply_receiver) = std::sync::mpsc::sync_channel::<Render>(0);
-
-        let _ = self.sync_render_sender.send((render.clone(), reply_sender));
-
-        let mut pixel_position = render.next();
+    pub fn render<'a>(&self, mut render: AccumulatedRender<'a>) -> AccumulatedRender<'a> {
+        let _ = self.render_iterator_sender.send(render.iterator());
 
         loop {
-            let Some(position) = pixel_position else {
-                break;
-            };
-
-            let _ = self
-                .pixel_position_sender
-                .send(position)
-                .expect("Failed to send pixel position to rendering threads");
-
-            pixel_position = render.next();
-        }
-
-        reply_receiver
-            .recv()
-            .expect("Failed to receive reply from rendering thread")
-    }
-}
-
-fn spawn_sync_thread(
-    sync_render_receiver: Receiver<(Render, SyncSender<Render>)>,
-    render_pixel_receiver: Receiver<RenderPixel>,
-) -> std::thread::JoinHandle<()> {
-    std::thread::spawn(move || {
-        loop {
-            let Ok(sync) = sync_render_receiver.recv() else {
-                break;
-            };
-
-            let (mut render, reply_sender) = sync;
-
-            loop {
-                match render_pixel_receiver.recv() {
-                    Ok(pixel) => match render.add_pixel(pixel) {
-                        crate::core::render::RenderState::InProgress => continue,
-                        crate::core::render::RenderState::Completed => {
-                            let _ = reply_sender.send(render);
-                            break;
-                        }
-                    },
-                    Err(_) => break,
-                }
+            match self.render_pixel_receiver.recv() {
+                Ok(pixel) => match render.add_pixel(pixel) {
+                    crate::core::render::RenderState::InProgress => continue,
+                    crate::core::render::RenderState::Completed => {
+                        break;
+                    }
+                },
+                Err(_) => break,
             }
         }
-    })
+
+        render
+    }
 }
 
 impl<T> Deref for ThreadPool<T> {
@@ -109,6 +74,33 @@ impl<T> Deref for ThreadPool<T> {
     fn deref(&self) -> &Self::Target {
         &self.renderer
     }
+}
+
+fn spawn_iterator_thread(
+    render_iterator_receiver: Receiver<RenderIterator>,
+    pixel_position_sender: SyncSender<PixelPosition>,
+) -> std::thread::JoinHandle<()> {
+    std::thread::spawn(move || {
+        loop {
+            let Ok(mut iterator) = render_iterator_receiver.recv() else {
+                break;
+            };
+
+            let mut pixel_position = iterator.next();
+
+            loop {
+                let Some(position) = pixel_position else {
+                    break;
+                };
+
+                let _ = pixel_position_sender
+                    .send(position)
+                    .expect("Failed to send pixel position to rendering threads");
+
+                pixel_position = iterator.next();
+            }
+        }
+    })
 }
 
 fn spawn_rendering_thread<T>(

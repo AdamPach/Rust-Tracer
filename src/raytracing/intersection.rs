@@ -44,7 +44,7 @@ impl RayHit {
     pub fn barycentric(&self) -> &Barycentric {
         &self.barycentric
     }
-    
+
     pub fn distance(&self) -> f64 {
         self.distance
     }

@@ -1,7 +1,7 @@
+use crate::core::render::color::{A, B, Color, G, R};
 use crate::io::wavefront::parse_array::parse_array;
 use crate::raytracing::material::MaterialType;
 use crate::raytracing::material::ambient::AmbientMaterialBuilder;
-use crate::raytracing::material::color::{A, B, Color, G, R};
 use crate::raytracing::material::diffuse::DiffuseMaterialBuilder;
 use crate::raytracing::material::emissive::EmissiveMaterialBuilder;
 use anyhow::Context;
@@ -62,7 +62,7 @@ fn parse_ambient(
     coefficients: &str,
     mut materials: Vec<MtlMaterial>,
 ) -> anyhow::Result<Vec<MtlMaterial>> {
-    let array = parse_array::<f32, 3, fn() -> anyhow::Error>(
+    let array = parse_array::<f64, 3, fn() -> anyhow::Error>(
         coefficients,
         || anyhow::anyhow!("Failed to parse ambient coefficient: expected 3 values, found less"),
         || anyhow::anyhow!("Failed to parse ambient coefficient in mtllib: invalid float value"),
@@ -83,7 +83,7 @@ fn parse_diffuse(
     coefficients: &str,
     mut materials: Vec<MtlMaterial>,
 ) -> anyhow::Result<Vec<MtlMaterial>> {
-    let _array = parse_array::<f32, 3, fn() -> anyhow::Error>(
+    let _array = parse_array::<f64, 3, fn() -> anyhow::Error>(
         coefficients,
         || anyhow::anyhow!("Failed to parse diffuse coefficient: expected 3 values, found less"),
         || anyhow::anyhow!("Failed to parse diffuse coefficient in mtllib: invalid float value"),
@@ -104,7 +104,7 @@ fn parse_emissive(
     coefficients: &str,
     mut materials: Vec<MtlMaterial>,
 ) -> anyhow::Result<Vec<MtlMaterial>> {
-    let array = parse_array::<f32, 3, fn() -> anyhow::Error>(
+    let array = parse_array::<f64, 3, fn() -> anyhow::Error>(
         coefficients,
         || anyhow::anyhow!("Failed to parse emissive coefficient: expected 3 values, found less"),
         || anyhow::anyhow!("Failed to parse emissive coefficient in mtllib: invalid float value"),
@@ -204,9 +204,9 @@ fn convert_mtl_to_material(mtl: MtlMaterial) -> anyhow::Result<MaterialType> {
 
 struct MtlMaterial {
     name: String,
-    ambient: Option<[f32; 3]>,
-    diffuse: Option<[f32; 3]>,
-    emissive: Option<[f32; 3]>,
+    ambient: Option<[f64; 3]>,
+    diffuse: Option<[f64; 3]>,
+    emissive: Option<[f64; 3]>,
     material: Option<Material>,
 }
 
