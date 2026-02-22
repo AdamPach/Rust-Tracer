@@ -3,11 +3,13 @@ use crate::core::geometry::point::Point;
 use crate::raytracer::CameraSettings;
 use crate::raytracer::RaytracerSettings;
 use crate::{RustTracerConfiguration, Size};
+use std::path::PathBuf;
 
 #[derive(Clone)]
 pub struct ApplicationState {
     size: Size,
     pub camera_state: CameraState,
+    pub picked_scene_file: Option<PathBuf>,
 }
 
 impl ApplicationState {
@@ -20,6 +22,7 @@ impl Into<ApplicationState> for RustTracerConfiguration {
     fn into(self) -> ApplicationState {
         ApplicationState {
             size: self.default_render_size().clone(),
+            picked_scene_file: None,
             camera_state: CameraState {
                 position: [10.0, 0.0, 0.0],
                 view_at: [0.0, 0.0, 0.0],

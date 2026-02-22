@@ -1,7 +1,7 @@
 use crate::core::geometry::coordinates::{X, Y, Z};
 use crate::core::geometry::matrix3x3::Matrix3x3;
 use crate::core::geometry::vector::Vector3;
-use rand::Rng;
+use rand::RngExt;
 use rand::prelude::ThreadRng;
 
 pub struct CosineWeightedHemisphereSample {

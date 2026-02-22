@@ -1,52 +1,18 @@
 use crate::application::rendering_thread::RenderingThread;
-use crate::application::state::ApplicationState;
+use crate::application::state::{ApplicationState};
 use crate::core::render::Render;
 use crate::raytracer::{Raytracer, RaytracerCommand, SceneLoadingDta};
-use eframe::egui::{Context, TextureHandle};
+use eframe::egui::{Context, TextureHandle, Ui};
 use eframe::epaint::{ColorImage, ImageData};
 use eframe::{Frame, egui};
+use egui_file_dialog::FileDialog;
 use std::default::Default;
-use std::env;
 
 pub struct Application {
     render: TextureHandle,
     rendering_thread: RenderingThread,
     state: ApplicationState,
-}
-
-impl Application {
-    pub fn new(into_state: impl Into<ApplicationState>, ctx: &Context) -> Self {
-        let state: ApplicationState = into_state.into();
-
-        let mut renderer = Raytracer::new(state.clone());
-
-        let result = renderer.send_command(RaytracerCommand::SceneUpdate(
-            SceneLoadingDta::WavefrontObj {
-                path: env::current_dir().unwrap().join("assets/cubes_and_sun.obj"),
-            },
-        ));
-
-        if let Err(e) = result {
-            println!("[ERROR]: Loading a scene failed with errors!");
-            println!("{:#}", e);
-        }
-
-        Self {
-            render: ctx.load_texture(
-                "Render",
-                Render::new(state.render_size().clone()),
-                Default::default(),
-            ),
-            rendering_thread: RenderingThread::new(renderer),
-            state,
-        }
-    }
-
-    fn try_update_render(&mut self, ctx: &Context) {
-        if let Ok(render) = self.rendering_thread.try_recv_render() {
-            self.render = ctx.load_texture("Render", render, Default::default());
-        }
-    }
+    file_dialog: FileDialog,
 }
 
 impl eframe::App for Application {
@@ -66,65 +32,140 @@ impl eframe::App for Application {
             .default_width(200.0)
             .resizable(false)
             .show(ctx, |ui| {
-                ui.label("Camera");
+                self.camera_settings_ui(ui);
+                self.scene_settings_ui(ui, ctx);
+            });
+    }
+}
 
-                egui::Grid::new("camera_grid")
+impl Application {
+    pub fn new(into_state: impl Into<ApplicationState>, ctx: &Context) -> Self {
+        let state: ApplicationState = into_state.into();
+
+        let renderer = Raytracer::new(state.clone());
+
+        Self {
+            render: ctx.load_texture(
+                "Render",
+                Render::new(state.render_size().clone()),
+                Default::default(),
+            ),
+            rendering_thread: RenderingThread::new(renderer),
+            state,
+            file_dialog: FileDialog::new(),
+        }
+    }
+
+    fn try_update_render(&mut self, ctx: &Context) {
+        if let Ok(render) = self.rendering_thread.try_recv_render() {
+            self.render = ctx.load_texture("Render", render, Default::default());
+        }
+    }
+
+    fn camera_settings_ui(&mut self, ui: &mut Ui) {
+        egui::CollapsingHeader::new("Camera").show(ui, |ui| {
+            egui::Grid::new("camera_grid")
+                .num_columns(2)
+                .spacing([40.0, 4.0])
+                .show(ui, |ui| {
+                    ui.label("View from ");
+                    ui.horizontal(|ui| {
+                        ui.label("X:");
+                        ui.add(
+                            egui::DragValue::new(&mut self.state.camera_state.position[0])
+                                .speed(0.1),
+                        );
+                        ui.label("Y:");
+                        ui.add(
+                            egui::DragValue::new(&mut self.state.camera_state.position[1])
+                                .speed(0.1),
+                        );
+                        ui.label("Z:");
+                        ui.add(
+                            egui::DragValue::new(&mut self.state.camera_state.position[2])
+                                .speed(0.1),
+                        );
+                    });
+                    ui.end_row();
+                    ui.label("View at ");
+                    ui.horizontal(|ui| {
+                        ui.label("X:");
+                        ui.add(
+                            egui::DragValue::new(&mut self.state.camera_state.view_at[0])
+                                .speed(0.1),
+                        );
+                        ui.label("Y:");
+                        ui.add(
+                            egui::DragValue::new(&mut self.state.camera_state.view_at[1])
+                                .speed(0.1),
+                        );
+                        ui.label("Z:");
+                        ui.add(
+                            egui::DragValue::new(&mut self.state.camera_state.view_at[2])
+                                .speed(0.1),
+                        );
+                    });
+                    ui.end_row();
+
+                    ui.label("Field of View ");
+                    ui.add(
+                        egui::Slider::new(&mut self.state.camera_state.fov, 10.0..=180.0)
+                            .suffix("°"),
+                    );
+                    ui.end_row();
+                });
+
+            if ui.button("Update Camera").clicked() {
+                self.rendering_thread
+                    .send_command(RaytracerCommand::CameraUpdate(
+                        self.state.camera_state.clone().into(),
+                    ));
+            }
+        });
+    }
+
+    fn scene_settings_ui(&mut self, ui: &mut Ui, ctx: &Context) {
+        egui::CollapsingHeader::new("Scene")
+            .default_open(false)
+            .show(ui, |ui| {
+                egui::Grid::new("scene_grid")
                     .num_columns(2)
                     .spacing([40.0, 4.0])
                     .show(ui, |ui| {
-                        ui.label("View from ");
-                        ui.horizontal(|ui| {
-                            ui.label("X:");
-                            ui.add(
-                                egui::DragValue::new(&mut self.state.camera_state.position[0])
-                                    .speed(0.1),
-                            );
-                            ui.label("Y:");
-                            ui.add(
-                                egui::DragValue::new(&mut self.state.camera_state.position[1])
-                                    .speed(0.1),
-                            );
-                            ui.label("Z:");
-                            ui.add(
-                                egui::DragValue::new(&mut self.state.camera_state.position[2])
-                                    .speed(0.1),
-                            );
-                        });
-                        ui.end_row();
-                        ui.label("View at ");
-                        ui.horizontal(|ui| {
-                            ui.label("X:");
-                            ui.add(
-                                egui::DragValue::new(&mut self.state.camera_state.view_at[0])
-                                    .speed(0.1),
-                            );
-                            ui.label("Y:");
-                            ui.add(
-                                egui::DragValue::new(&mut self.state.camera_state.view_at[1])
-                                    .speed(0.1),
-                            );
-                            ui.label("Z:");
-                            ui.add(
-                                egui::DragValue::new(&mut self.state.camera_state.view_at[2])
-                                    .speed(0.1),
-                            );
-                        });
-                        ui.end_row();
+                        let filename = self
+                            .state
+                            .picked_scene_file
+                            .as_ref()
+                            .and_then(|p| p.file_name())
+                            .and_then(|n| n.to_str())
+                            .unwrap_or("No file selected");
 
-                        ui.label("Field of View ");
-                        ui.add(
-                            egui::Slider::new(&mut self.state.camera_state.fov, 10.0..=180.0)
-                                .suffix("°"),
-                        );
-                        ui.end_row();
+                        ui.label(filename);
+
+                        if ui.button("Select file").clicked() {
+                            self.file_dialog.pick_file()
+                        }
                     });
 
-                if ui.button("Update Camera").clicked() {
-                    self.rendering_thread
-                        .send_command(RaytracerCommand::CameraUpdate(
-                            self.state.camera_state.clone().into(),
-                        ));
+                self.file_dialog.update(ctx);
+
+                if let Some(path) = self.file_dialog.take_picked() {
+                    self.state.picked_scene_file = Some(path.to_path_buf());
                 }
+
+                ui.add_enabled(
+                    self.state.picked_scene_file.is_some(),
+                    egui::Button::new("Load Scene"),
+                )
+                .clicked()
+                .then(|| {
+                    if let Some(path) = &self.state.picked_scene_file {
+                        self.rendering_thread
+                            .send_command(RaytracerCommand::SceneUpdate(
+                                SceneLoadingDta::WavefrontObj { path: path.clone() },
+                            ));
+                    }
+                });
             });
     }
 }
