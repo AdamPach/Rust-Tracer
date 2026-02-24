@@ -1,6 +1,6 @@
 use crate::core::render::{PixelPosition, RenderPixel};
-use crate::raytracer::shading::{TracingContext, trace_ray};
-use crate::raytracer::threadpool::Renderer;
+use crate::rendering::shading::{TracingContext, trace_ray};
+use crate::rendering::threadpool::Renderer;
 use crate::raytracing::{Camera, Scene};
 use arc_swap::ArcSwap;
 use std::sync::Arc;

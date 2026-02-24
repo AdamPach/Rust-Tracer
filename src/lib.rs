@@ -1,7 +1,7 @@
 mod application;
 mod core;
 mod io;
-mod raytracer;
+mod rendering;
 mod raytracing;
 
 pub use application::app::RustTracer;

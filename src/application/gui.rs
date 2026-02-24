@@ -1,7 +1,7 @@
 use crate::application::rendering_thread::RenderingThread;
-use crate::application::state::ApplicationState;
+use crate::application::state::{ApplicationState, SceneState};
 use crate::core::render::Render;
-use crate::raytracer::{Raytracer, RaytracerCommand, SceneLoadingDta};
+use crate::rendering::{Raytracer, RaytracerCommand, RaytracerResponse, SceneLoadingDta};
 use eframe::egui::{Context, TextureHandle, Ui};
 use eframe::epaint::{ColorImage, ImageData};
 use eframe::{Frame, egui};
@@ -18,7 +18,7 @@ pub struct Application {
 
 impl eframe::App for Application {
     fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
-        self.try_update_render(ctx);
+        self.try_update_application(ctx);
 
         ctx.request_repaint_after(std::time::Duration::from_millis(16));
 
@@ -35,6 +35,14 @@ impl eframe::App for Application {
             .show(ctx, |ui| {
                 self.camera_settings_ui(ui);
                 self.scene_settings_ui(ui, ctx);
+
+                egui::CollapsingHeader::new("Rendering")
+                    .default_open(false)
+                    .show(ui, |ui| {
+                        if ui.button("Start").clicked() {
+
+                        }
+                    });
             });
     }
 }
@@ -62,9 +70,21 @@ impl Application {
         }
     }
 
-    fn try_update_render(&mut self, ctx: &Context) {
-        if let Ok(render) = self.rendering_thread.try_recv_render() {
-            self.render = ctx.load_texture("Render", render, Default::default());
+    fn try_update_application(&mut self, ctx: &Context) {
+        if let Ok(response) = self.rendering_thread.try_recv_render() {
+
+            match response {
+                Ok(RaytracerResponse::RenderComplete(render)) => {
+                    self.render = ctx.load_texture("Render", render, Default::default());
+                },
+                Ok(RaytracerResponse::SceneLoaded) => {
+                    self.state.scene_state = match &self.state.scene_state {
+                        SceneState::Loading(path) => SceneState::Loaded(path.clone()),
+                        _ => SceneState::None,
+                    }
+                }
+                _ => {}
+            }
         }
     }
 
@@ -138,40 +158,27 @@ impl Application {
                     .num_columns(2)
                     .spacing([40.0, 4.0])
                     .show(ui, |ui| {
-                        let filename = self
-                            .state
-                            .picked_scene_file
-                            .as_ref()
-                            .and_then(|p| p.file_name())
-                            .and_then(|n| n.to_str())
-                            .unwrap_or("No file selected");
+                        ui.label(self.state.scene_state.string_status());
 
-                        ui.label(filename);
+                        ui.end_row();
 
-                        if ui.button("Select file").clicked() {
+                        if ui.button("Load OBJ Scene").clicked() {
                             self.file_dialog.pick_file()
                         }
+
+                        if ui.button("Remove Scene").clicked() {}
                     });
 
                 self.file_dialog.update(ctx);
 
                 if let Some(path) = self.file_dialog.take_picked() {
-                    self.state.picked_scene_file = Some(path.to_path_buf());
-                }
+                    self.state.scene_state = SceneState::Loading(path.clone());
 
-                ui.add_enabled(
-                    self.state.picked_scene_file.is_some(),
-                    egui::Button::new("Load Scene"),
-                )
-                .clicked()
-                .then(|| {
-                    if let Some(path) = &self.state.picked_scene_file {
-                        self.rendering_thread
-                            .send_command(RaytracerCommand::SceneUpdate(
-                                SceneLoadingDta::WavefrontObj { path: path.clone() },
-                            ));
-                    }
-                });
+                    self.rendering_thread
+                        .send_command(RaytracerCommand::SceneUpdate(
+                            SceneLoadingDta::WavefrontObj { path: path.clone() },
+                        ));
+                }
             });
     }
 }

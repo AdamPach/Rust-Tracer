@@ -1,7 +1,7 @@
 use crate::core::geometry::coordinates::{X, Y, Z};
 use crate::core::geometry::point::Point;
-use crate::raytracer::CameraSettings;
-use crate::raytracer::RaytracerSettings;
+use crate::rendering::CameraSettings;
+use crate::rendering::RaytracerSettings;
 use crate::{RustTracerConfiguration, Size};
 use std::path::PathBuf;
 
@@ -9,7 +9,7 @@ use std::path::PathBuf;
 pub struct ApplicationState {
     size: Size,
     pub camera_state: CameraState,
-    pub picked_scene_file: Option<PathBuf>,
+    pub scene_state: SceneState,
 }
 
 impl ApplicationState {
@@ -22,7 +22,7 @@ impl Into<ApplicationState> for RustTracerConfiguration {
     fn into(self) -> ApplicationState {
         ApplicationState {
             size: self.default_render_size().clone(),
-            picked_scene_file: None,
+            scene_state: SceneState::None,
             camera_state: CameraState {
                 position: [10.0, 0.0, 0.0],
                 view_at: [0.0, 0.0, 0.0],
@@ -63,6 +63,23 @@ impl Into<CameraSettings> for CameraState {
             position,
             view_at,
             fov: self.fov * std::f64::consts::PI / 180.0,
+        }
+    }
+}
+
+#[derive(Clone)]
+pub enum SceneState {
+    None,
+    Loading(PathBuf),
+    Loaded(PathBuf),
+}
+
+impl SceneState {
+    pub fn string_status(&self) -> String {
+        match self {
+            SceneState::None => "No scene loaded".to_string(),
+            SceneState::Loading(_) => "Loading Scene...".to_string(),
+            SceneState::Loaded(path) => format!("Loaded {}", path.file_name().and_then(|n| n.to_str()).unwrap_or("Unknown file")),
         }
     }
 }

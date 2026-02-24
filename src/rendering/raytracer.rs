@@ -1,8 +1,8 @@
 use crate::core::render::{Render, RenderAccumulator};
-use crate::raytracer::raytracer_renderer::RaytracerRenderer;
-use crate::raytracer::settings::RaytracerSettings;
-use crate::raytracer::threadpool::ThreadPool;
-use crate::raytracer::{CameraSettings, RaytracerCommand, RaytracerResponse};
+use crate::rendering::raytracer_renderer::RaytracerRenderer;
+use crate::rendering::settings::RaytracerSettings;
+use crate::rendering::threadpool::ThreadPool;
+use crate::rendering::{CameraSettings, RaytracerCommand, RaytracerResponse};
 use crate::raytracing::{Camera, SceneBuilder, SceneDescriptor};
 
 pub struct Raytracer {
@@ -23,7 +23,7 @@ impl Raytracer {
 
         let renderer = RaytracerRenderer::new(scene, camera);
 
-        let rendering_thread_pool = ThreadPool::new(64, renderer);
+        let rendering_thread_pool = ThreadPool::new(32, renderer);
 
         let accumulator = RenderAccumulator::new(settings.size().clone());
 
@@ -45,7 +45,7 @@ impl Raytracer {
             }
             RaytracerCommand::SceneUpdate(builder) => {
                 self.set_scene(builder.loader())?;
-                Ok(RaytracerResponse::RendererUpdated)
+                Ok(RaytracerResponse::SceneLoaded)
             }
         }
     }

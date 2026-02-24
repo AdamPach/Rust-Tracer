@@ -1,6 +1,6 @@
 use crate::core::render::color::{A, B, Color, G, R};
-use crate::raytracer::shading::sampling::cos_weighted_hemisphere_sample;
-use crate::raytracer::shading::{TracingContext, trace_ray};
+use crate::rendering::shading::sampling::cos_weighted_hemisphere_sample;
+use crate::rendering::shading::{TracingContext, trace_ray};
 use crate::raytracing::Ray;
 use crate::raytracing::material::diffuse::DiffuseMaterial;
 use std::f64::consts::PI;

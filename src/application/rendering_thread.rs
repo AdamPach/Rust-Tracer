@@ -1,9 +1,8 @@
-use crate::core::render::Render;
-use crate::raytracer::{Raytracer, RaytracerCommand, RaytracerResponse};
+use crate::rendering::{Raytracer, RaytracerCommand, RaytracerResponse};
 use std::sync::mpsc::{Receiver, Sender, TryRecvError, channel};
 
 pub struct RenderingThread {
-    render_receiver: Receiver<Render>,
+    render_receiver: Receiver<anyhow::Result<RaytracerResponse>>,
     renderer_command_sender: Sender<RaytracerCommand>,
 }
 
@@ -20,7 +19,7 @@ impl RenderingThread {
         }
     }
 
-    pub fn try_recv_render(&mut self) -> Result<Render, TryRecvError> {
+    pub fn try_recv_render(&mut self) -> Result<anyhow::Result<RaytracerResponse>, TryRecvError> {
         match self.render_receiver.try_recv() {
             Ok(render) => {
                 let mut render = render;
@@ -43,20 +42,20 @@ impl RenderingThread {
 
 fn rendering_thread(
     mut renderer: Raytracer,
-    render_sender: Sender<Render>,
+    render_sender: Sender<anyhow::Result<RaytracerResponse>>,
     command_receiver: Receiver<RaytracerCommand>,
 ) {
     std::thread::spawn(move || {
         loop {
             while let Ok(command) = command_receiver.try_recv() {
-                let _ = renderer.send_command(command);
+                let response = renderer.send_command(command);
+
+                let _ = render_sender.send(response);
             }
 
-            let render = renderer.send_command(RaytracerCommand::RenderFrame);
+            let response = renderer.send_command(RaytracerCommand::RenderFrame);
 
-            if let Ok(RaytracerResponse::RenderComplete(render)) = render {
-                let _ = render_sender.send(render);
-            }
+            let _ = render_sender.send(response);
         }
     });
 }
