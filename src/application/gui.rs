@@ -16,37 +16,6 @@ pub struct Application {
     file_dialog: FileDialog,
 }
 
-impl eframe::App for Application {
-    fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
-        self.try_update_application(ctx);
-
-        ctx.request_repaint_after(std::time::Duration::from_millis(16));
-
-        egui::Window::new("Render")
-            .default_width(self.state.render_size().get_width().into())
-            .default_height(self.state.render_size().get_height().into())
-            .show(ctx, |ui| {
-                ui.image((self.render.id(), ui.available_size()));
-            });
-
-        egui::Window::new("Settings")
-            .default_width(200.0)
-            .resizable(false)
-            .show(ctx, |ui| {
-                self.camera_settings_ui(ui);
-                self.scene_settings_ui(ui, ctx);
-
-                egui::CollapsingHeader::new("Rendering")
-                    .default_open(false)
-                    .show(ui, |ui| {
-                        if ui.button("Start").clicked() {
-
-                        }
-                    });
-            });
-    }
-}
-
 impl Application {
     pub fn new(into_state: impl Into<ApplicationState>, ctx: &Context) -> Self {
         let state: ApplicationState = into_state.into();
@@ -72,11 +41,10 @@ impl Application {
 
     fn try_update_application(&mut self, ctx: &Context) {
         if let Ok(response) = self.rendering_thread.try_recv_render() {
-
             match response {
                 Ok(RaytracerResponse::RenderComplete(render)) => {
                     self.render = ctx.load_texture("Render", render, Default::default());
-                },
+                }
                 Ok(RaytracerResponse::SceneLoaded) => {
                     self.state.scene_state = match &self.state.scene_state {
                         SceneState::Loading(path) => SceneState::Loaded(path.clone()),
@@ -87,7 +55,36 @@ impl Application {
             }
         }
     }
+}
 
+impl eframe::App for Application {
+    fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
+        self.try_update_application(ctx);
+
+        ctx.request_repaint_after(std::time::Duration::from_millis(16));
+
+        egui::Window::new("Render")
+            .default_width(self.state.render_size().get_width().into())
+            .default_height(self.state.render_size().get_height().into())
+            .show(ctx, |ui| {
+                ui.image((self.render.id(), ui.available_size()));
+            });
+
+        egui::Window::new("Settings")
+            .default_width(200.0)
+            .resizable(false)
+            .show(ctx, |ui| {
+                self.camera_settings_ui(ui);
+                self.scene_settings_ui(ui, ctx);
+
+                egui::CollapsingHeader::new("Rendering")
+                    .default_open(false)
+                    .show(ui, |ui| if ui.button("Start").clicked() {});
+            });
+    }
+}
+
+impl Application {
     fn camera_settings_ui(&mut self, ui: &mut Ui) {
         egui::CollapsingHeader::new("Camera").show(ui, |ui| {
             egui::Grid::new("camera_grid")
@@ -172,7 +169,9 @@ impl Application {
                 self.file_dialog.update(ctx);
 
                 if let Some(path) = self.file_dialog.take_picked() {
-                    self.state.scene_state = SceneState::Loading(path.clone());
+                    self.state.scene_state = SceneState::Loading(
+                        path.file_name().unwrap().to_str().unwrap().to_string(),
+                    );
 
                     self.rendering_thread
                         .send_command(RaytracerCommand::SceneUpdate(

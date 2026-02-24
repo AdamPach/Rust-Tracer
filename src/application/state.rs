@@ -3,7 +3,6 @@ use crate::core::geometry::point::Point;
 use crate::rendering::CameraSettings;
 use crate::rendering::RaytracerSettings;
 use crate::{RustTracerConfiguration, Size};
-use std::path::PathBuf;
 
 #[derive(Clone)]
 pub struct ApplicationState {
@@ -70,8 +69,8 @@ impl Into<CameraSettings> for CameraState {
 #[derive(Clone)]
 pub enum SceneState {
     None,
-    Loading(PathBuf),
-    Loaded(PathBuf),
+    Loading(String),
+    Loaded(String),
 }
 
 impl SceneState {
@@ -79,7 +78,7 @@ impl SceneState {
         match self {
             SceneState::None => "No scene loaded".to_string(),
             SceneState::Loading(_) => "Loading Scene...".to_string(),
-            SceneState::Loaded(path) => format!("Loaded {}", path.file_name().and_then(|n| n.to_str()).unwrap_or("Unknown file")),
+            SceneState::Loaded(path) => format!("Loaded {}", path),
         }
     }
 }

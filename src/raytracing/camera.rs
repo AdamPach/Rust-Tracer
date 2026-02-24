@@ -4,8 +4,8 @@ use crate::core::geometry::matrix3x3::Matrix3x3;
 use crate::core::geometry::point::Point;
 use crate::core::geometry::vector::Vector3;
 use crate::core::render::{PixelX, PixelY};
-use crate::rendering::CameraSettings;
 use crate::raytracing::intersection::Ray;
+use crate::rendering::CameraSettings;
 
 pub struct Camera {
     size: Size,

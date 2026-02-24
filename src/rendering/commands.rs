@@ -1,7 +1,7 @@
 use crate::core::render::Render;
 use crate::io::wavefront::WavefrontLoader;
-use crate::rendering::CameraSettings;
 use crate::raytracing::SceneBuilder;
+use crate::rendering::CameraSettings;
 use std::path::PathBuf;
 
 pub enum RaytracerCommand {

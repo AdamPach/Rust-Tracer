@@ -1,8 +1,8 @@
 use crate::core::render::color::{A, B, Color, G, R};
-use crate::rendering::shading::sampling::cos_weighted_hemisphere_sample;
-use crate::rendering::shading::{TracingContext, trace_ray};
 use crate::raytracing::Ray;
 use crate::raytracing::material::diffuse::DiffuseMaterial;
+use crate::rendering::shading::sampling::cos_weighted_hemisphere_sample;
+use crate::rendering::shading::{TracingContext, trace_ray};
 use std::f64::consts::PI;
 
 pub fn diffuse_material_shader(material: &DiffuseMaterial, mut ctx: TracingContext) -> Color {

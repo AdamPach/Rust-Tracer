@@ -1,9 +1,9 @@
 use crate::core::render::{Render, RenderAccumulator};
+use crate::raytracing::{Camera, SceneBuilder, SceneDescriptor};
 use crate::rendering::raytracer_renderer::RaytracerRenderer;
 use crate::rendering::settings::RaytracerSettings;
 use crate::rendering::threadpool::ThreadPool;
 use crate::rendering::{CameraSettings, RaytracerCommand, RaytracerResponse};
-use crate::raytracing::{Camera, SceneBuilder, SceneDescriptor};
 
 pub struct Raytracer {
     settings: RaytracerSettings,
