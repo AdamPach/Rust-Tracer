@@ -1,5 +1,5 @@
 use crate::application::rendering_thread::RenderingThread;
-use crate::application::state::{ApplicationState};
+use crate::application::state::ApplicationState;
 use crate::core::render::Render;
 use crate::raytracer::{Raytracer, RaytracerCommand, SceneLoadingDta};
 use eframe::egui::{Context, TextureHandle, Ui};
@@ -7,6 +7,7 @@ use eframe::epaint::{ColorImage, ImageData};
 use eframe::{Frame, egui};
 use egui_file_dialog::FileDialog;
 use std::default::Default;
+use std::sync::Arc;
 
 pub struct Application {
     render: TextureHandle,
@@ -52,7 +53,12 @@ impl Application {
             ),
             rendering_thread: RenderingThread::new(renderer),
             state,
-            file_dialog: FileDialog::new(),
+            file_dialog: FileDialog::new()
+                .add_file_filter(
+                    "OBJ File",
+                    Arc::new(|p| p.extension().unwrap_or_default() == "obj"),
+                )
+                .default_file_filter("OBJ File"),
         }
     }
 
