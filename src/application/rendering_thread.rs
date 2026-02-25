@@ -1,9 +1,20 @@
+use crate::core::render::Render;
 use crate::rendering::{Raytracer, RaytracerCommand, RaytracerResponse};
 use std::sync::mpsc::{Receiver, Sender, TryRecvError, channel};
 
+pub enum RenderingThreadCommand {
+    SendCommand(RaytracerCommand),
+    RunRaytracer,
+}
+
+pub enum RenderingThreadResponse {
+    CommandResponse(RaytracerResponse),
+    Render(Render),
+}
+
 pub struct RenderingThread {
-    render_receiver: Receiver<anyhow::Result<RaytracerResponse>>,
-    renderer_command_sender: Sender<RaytracerCommand>,
+    render_receiver: Receiver<anyhow::Result<RenderingThreadResponse>>,
+    renderer_command_sender: Sender<RenderingThreadCommand>,
 }
 
 impl RenderingThread {
@@ -19,41 +30,54 @@ impl RenderingThread {
         }
     }
 
-    pub fn try_recv_render(&mut self) -> Result<anyhow::Result<RaytracerResponse>, TryRecvError> {
+    pub fn try_recv_response(
+        &mut self,
+    ) -> Result<anyhow::Result<RenderingThreadResponse>, TryRecvError> {
         match self.render_receiver.try_recv() {
             Ok(render) => {
-                let mut render = render;
+                let mut response = render;
 
                 while let Ok(new_render) = self.render_receiver.try_recv() {
-                    render = new_render;
+                    response = new_render;
                 }
 
-                Ok(render)
+                Ok(response)
             }
             Err(TryRecvError::Empty) => Err(TryRecvError::Empty),
             Err(TryRecvError::Disconnected) => panic!("render thread disconnected"),
         }
     }
 
-    pub fn send_command(&self, command: RaytracerCommand) {
+    pub fn send_command(&self, command: RenderingThreadCommand) {
         let _ = self.renderer_command_sender.send(command);
     }
 }
 
 fn rendering_thread(
     mut renderer: Raytracer,
-    render_sender: Sender<anyhow::Result<RaytracerResponse>>,
-    command_receiver: Receiver<RaytracerCommand>,
+    render_sender: Sender<anyhow::Result<RenderingThreadResponse>>,
+    command_receiver: Receiver<RenderingThreadCommand>,
 ) {
     std::thread::spawn(move || {
         loop {
             while let Ok(command) = command_receiver.try_recv() {
-                let response = renderer.send_command(command);
+                match command {
+                    RenderingThreadCommand::SendCommand(command) => {
+                        let response = renderer.send_command(command);
 
-                let _ = render_sender.send(response);
+                        let _ = render_sender
+                            .send(response.map(RenderingThreadResponse::CommandResponse));
+                    }
+                    RenderingThreadCommand::RunRaytracer => renderer = renderer.run(),
+                }
             }
 
-            let response = renderer.send_command(RaytracerCommand::RenderFrame);
+            let response = match &mut renderer {
+                Raytracer::Running(renderer) => {
+                    Ok(RenderingThreadResponse::Render(renderer.render_image()))
+                }
+                Raytracer::NotRunning(_) => continue,
+            };
 
             let _ = render_sender.send(response);
         }

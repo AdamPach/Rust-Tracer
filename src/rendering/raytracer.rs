@@ -5,15 +5,14 @@ use crate::rendering::settings::RaytracerSettings;
 use crate::rendering::threadpool::ThreadPool;
 use crate::rendering::{CameraSettings, RaytracerCommand, RaytracerResponse};
 
-pub struct Raytracer {
-    settings: RaytracerSettings,
-    rendering_thread_pool: ThreadPool<RaytracerRenderer>,
-    accumulator: RenderAccumulator,
+pub enum Raytracer {
+    Running(RunningRaytracer),
+    NotRunning(NonRunningRaytracer),
 }
 
 impl Raytracer {
-    pub fn new(state: impl Into<RaytracerSettings>) -> Self {
-        let settings: RaytracerSettings = state.into();
+    pub fn new(settings: impl Into<RaytracerSettings>) -> Self {
+        let settings: RaytracerSettings = settings.into();
 
         let camera_settings = settings.camera_settings();
 
@@ -23,33 +22,85 @@ impl Raytracer {
 
         let renderer = RaytracerRenderer::new(scene, camera);
 
-        let rendering_thread_pool = ThreadPool::new(32, renderer);
-
         let accumulator = RenderAccumulator::new(settings.size().clone());
 
-        Self {
+        Raytracer::NotRunning(NonRunningRaytracer {
             settings,
-            rendering_thread_pool,
+            renderer,
             accumulator,
+        })
+    }
+
+    pub fn run(self) -> Self {
+        match self {
+            Raytracer::Running(raytracer) => Raytracer::Running(raytracer),
+            Raytracer::NotRunning(raytracer) => {
+                let rendering_thread_pool = ThreadPool::new(32, raytracer.renderer);
+
+                Raytracer::Running(RunningRaytracer {
+                    settings: raytracer.settings,
+                    rendering_thread_pool,
+                    accumulator: raytracer.accumulator,
+                })
+            }
         }
     }
 
     pub fn send_command(&mut self, command: RaytracerCommand) -> anyhow::Result<RaytracerResponse> {
-        match command {
-            RaytracerCommand::RenderFrame => {
-                Ok(RaytracerResponse::RenderComplete(self.render_image()))
+        match (self, command) {
+            (Raytracer::Running(raytracer), RaytracerCommand::SceneUpdate(scene)) => {
+                raytracer.set_scene(scene.loader())?;
+                Ok(RaytracerResponse::SceneLoaded)
             }
-            RaytracerCommand::CameraUpdate(settings) => {
-                self.set_camera(settings)?;
+            (Raytracer::Running(raytracer), RaytracerCommand::CameraUpdate(camera)) => {
+                raytracer.set_camera(camera)?;
                 Ok(RaytracerResponse::RendererUpdated)
             }
-            RaytracerCommand::SceneUpdate(builder) => {
-                self.set_scene(builder.loader())?;
+            (Raytracer::NotRunning(raytracer), RaytracerCommand::SceneUpdate(scene)) => {
+                raytracer.set_scene(scene.loader())?;
                 Ok(RaytracerResponse::SceneLoaded)
+            }
+            (Raytracer::NotRunning(raytracer), RaytracerCommand::CameraUpdate(camera)) => {
+                raytracer.set_camera(camera)?;
+                Ok(RaytracerResponse::RendererUpdated)
             }
         }
     }
+}
 
+pub struct RunningRaytracer {
+    settings: RaytracerSettings,
+    rendering_thread_pool: ThreadPool<RaytracerRenderer>,
+    accumulator: RenderAccumulator,
+}
+
+pub struct NonRunningRaytracer {
+    settings: RaytracerSettings,
+    renderer: RaytracerRenderer,
+    accumulator: RenderAccumulator,
+}
+
+impl NonRunningRaytracer {
+    fn set_camera(&mut self, camera_settings: CameraSettings) -> anyhow::Result<()> {
+        let camera = Camera::new(self.settings.size(), camera_settings);
+
+        self.renderer.set_camera(camera);
+        self.accumulator.clear();
+
+        Ok(())
+    }
+
+    fn set_scene<T: SceneBuilder>(&mut self, scene_builder: T) -> anyhow::Result<()> {
+        let scene = scene_builder.build_scene()?;
+
+        self.renderer.set_scene(scene);
+        self.accumulator.clear();
+
+        Ok(())
+    }
+}
+
+impl RunningRaytracer {
     fn set_camera(&mut self, camera_settings: CameraSettings) -> anyhow::Result<()> {
         let camera = Camera::new(self.settings.size(), camera_settings);
 
@@ -68,11 +119,11 @@ impl Raytracer {
         Ok(())
     }
 
-    fn render_image(&mut self) -> Render {
-        let mut test = self.accumulator.accumulated_render();
+    pub fn render_image(&mut self) -> Render {
+        let mut render = self.accumulator.accumulated_render();
 
-        test = self.rendering_thread_pool.render(test);
+        render = self.rendering_thread_pool.render(render);
 
-        test.get_render()
+        render.get_render()
     }
 }

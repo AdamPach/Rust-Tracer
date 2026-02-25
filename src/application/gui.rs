@@ -1,4 +1,6 @@
-use crate::application::rendering_thread::RenderingThread;
+use crate::application::rendering_thread::{
+    RenderingThread, RenderingThreadCommand, RenderingThreadResponse,
+};
 use crate::application::state::{ApplicationState, SceneState};
 use crate::core::render::Render;
 use crate::rendering::{Raytracer, RaytracerCommand, RaytracerResponse, SceneLoadingDta};
@@ -20,15 +22,13 @@ impl Application {
     pub fn new(into_state: impl Into<ApplicationState>, ctx: &Context) -> Self {
         let state: ApplicationState = into_state.into();
 
-        let renderer = Raytracer::new(state.clone());
-
         Self {
             render: ctx.load_texture(
                 "Render",
                 Render::new(state.render_size().clone()),
                 Default::default(),
             ),
-            rendering_thread: RenderingThread::new(renderer),
+            rendering_thread: RenderingThread::new(Raytracer::new(state.clone())),
             state,
             file_dialog: FileDialog::new()
                 .add_file_filter(
@@ -40,12 +40,12 @@ impl Application {
     }
 
     fn try_update_application(&mut self, ctx: &Context) {
-        if let Ok(response) = self.rendering_thread.try_recv_render() {
+        if let Ok(response) = self.rendering_thread.try_recv_response() {
             match response {
-                Ok(RaytracerResponse::RenderComplete(render)) => {
+                Ok(RenderingThreadResponse::Render(render)) => {
                     self.render = ctx.load_texture("Render", render, Default::default());
                 }
-                Ok(RaytracerResponse::SceneLoaded) => {
+                Ok(RenderingThreadResponse::CommandResponse(RaytracerResponse::SceneLoaded)) => {
                     self.state.scene_state = match &self.state.scene_state {
                         SceneState::Loading(path) => SceneState::Loaded(path.clone()),
                         _ => SceneState::None,
@@ -79,7 +79,12 @@ impl eframe::App for Application {
 
                 egui::CollapsingHeader::new("Rendering")
                     .default_open(false)
-                    .show(ui, |ui| if ui.button("Start").clicked() {});
+                    .show(ui, |ui| {
+                        if ui.button("Start").clicked() {
+                            self.rendering_thread
+                                .send_command(RenderingThreadCommand::RunRaytracer);
+                        }
+                    });
             });
     }
 }
@@ -140,8 +145,8 @@ impl Application {
 
             if ui.button("Update Camera").clicked() {
                 self.rendering_thread
-                    .send_command(RaytracerCommand::CameraUpdate(
-                        self.state.camera_state.clone().into(),
+                    .send_command(RenderingThreadCommand::SendCommand(
+                        RaytracerCommand::CameraUpdate(self.state.camera_state.clone().into()),
                     ));
             }
         });
@@ -174,8 +179,10 @@ impl Application {
                     );
 
                     self.rendering_thread
-                        .send_command(RaytracerCommand::SceneUpdate(
-                            SceneLoadingDta::WavefrontObj { path: path.clone() },
+                        .send_command(RenderingThreadCommand::SendCommand(
+                            RaytracerCommand::SceneUpdate(SceneLoadingDta::WavefrontObj {
+                                path: path.clone(),
+                            }),
                         ));
                 }
             });
