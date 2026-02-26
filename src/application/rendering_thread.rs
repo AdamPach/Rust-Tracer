@@ -4,12 +4,15 @@ use std::sync::mpsc::{Receiver, Sender, TryRecvError, channel};
 
 pub enum RenderingThreadCommand {
     SendCommand(RaytracerCommand),
-    RunRaytracer,
+    StartRendering,
+    StopRendering,
 }
 
 pub enum RenderingThreadResponse {
     CommandResponse(RaytracerResponse),
     Render(Render),
+    RenderingStarted,
+    RenderingStopped,
 }
 
 pub struct RenderingThread {
@@ -61,15 +64,25 @@ fn rendering_thread(
     std::thread::spawn(move || {
         loop {
             while let Ok(command) = command_receiver.try_recv() {
-                match command {
+                let response = match command {
                     RenderingThreadCommand::SendCommand(command) => {
                         let response = renderer.send_command(command);
 
-                        let _ = render_sender
-                            .send(response.map(RenderingThreadResponse::CommandResponse));
+                        response.map(RenderingThreadResponse::CommandResponse)
                     }
-                    RenderingThreadCommand::RunRaytracer => renderer = renderer.run(),
-                }
+                    RenderingThreadCommand::StartRendering => {
+                        renderer = renderer.run();
+
+                        Ok(RenderingThreadResponse::RenderingStarted)
+                    }
+                    RenderingThreadCommand::StopRendering => {
+                        renderer = renderer.stop();
+
+                        Ok(RenderingThreadResponse::RenderingStopped)
+                    }
+                };
+
+                let _ = render_sender.send(response);
             }
 
             let response = match &mut renderer {

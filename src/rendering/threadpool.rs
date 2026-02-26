@@ -11,6 +11,8 @@ pub struct ThreadPool<T> {
     render_pixel_receiver: Receiver<RenderPixel>,
     render_iterator_sender: SyncSender<RenderIterator>,
     renderer: Arc<T>,
+    rendering_threads: Vec<std::thread::JoinHandle<()>>,
+    iterator_thread: std::thread::JoinHandle<()>,
 }
 
 impl<T> ThreadPool<T>
@@ -32,20 +34,29 @@ where
 
         let renderer = Arc::new(renderer);
 
+        let mut rendering_threads = Vec::with_capacity(number_of_threads as usize);
+
         for _ in 0..number_of_threads {
             let pixel_position_receiver = pixel_position_receiver.clone();
             let render_pixel_sender = render_pixel_sender.clone();
             let renderer = renderer.clone();
 
-            spawn_rendering_thread(renderer, pixel_position_receiver, render_pixel_sender);
+            rendering_threads.push(spawn_rendering_thread(
+                renderer,
+                pixel_position_receiver,
+                render_pixel_sender,
+            ));
         }
 
-        spawn_iterator_thread(render_iterator_receiver, pixel_position_sender);
+        let iterator_thread =
+            spawn_iterator_thread(render_iterator_receiver, pixel_position_sender);
 
         Self {
             render_pixel_receiver,
             render_iterator_sender,
             renderer,
+            rendering_threads,
+            iterator_thread,
         }
     }
 
@@ -65,6 +76,20 @@ where
         }
 
         render
+    }
+
+    pub fn stop(self) -> T {
+        drop(self.render_iterator_sender);
+        drop(self.render_pixel_receiver);
+
+        for thread in self.rendering_threads {
+            let _ = thread.join();
+        }
+
+        let _ = self.iterator_thread.join();
+
+        Arc::try_unwrap(self.renderer)
+            .unwrap_or_else(|_| panic!("Failed to unwrap renderer from Arc"))
     }
 }
 

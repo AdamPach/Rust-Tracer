@@ -46,6 +46,17 @@ impl Raytracer {
         }
     }
 
+    pub fn stop(self) -> Self {
+        match self {
+            Raytracer::Running(raytracer) => Raytracer::NotRunning(NonRunningRaytracer {
+                settings: raytracer.settings,
+                renderer: raytracer.rendering_thread_pool.stop(),
+                accumulator: raytracer.accumulator,
+            }),
+            Raytracer::NotRunning(raytracer) => Raytracer::NotRunning(raytracer),
+        }
+    }
+
     pub fn send_command(&mut self, command: RaytracerCommand) -> anyhow::Result<RaytracerResponse> {
         match (self, command) {
             (Raytracer::Running(raytracer), RaytracerCommand::SceneUpdate(scene)) => {

@@ -51,6 +51,12 @@ impl Application {
                         _ => SceneState::None,
                     }
                 }
+                Ok(RenderingThreadResponse::RenderingStarted) => {
+                    self.state.rendering = true;
+                },
+                Ok(RenderingThreadResponse::RenderingStopped) => {
+                    self.state.rendering = false;
+                }
                 _ => {}
             }
         }
@@ -77,12 +83,19 @@ impl eframe::App for Application {
                 self.camera_settings_ui(ui);
                 self.scene_settings_ui(ui, ctx);
 
+                let run_button_text = if self.state.rendering { "Stop" } else { "Start" };
+
                 egui::CollapsingHeader::new("Rendering")
                     .default_open(false)
                     .show(ui, |ui| {
-                        if ui.button("Start").clicked() {
-                            self.rendering_thread
-                                .send_command(RenderingThreadCommand::RunRaytracer);
+                        if ui.button(run_button_text).clicked() {
+                            if self.state.rendering {
+                                self.rendering_thread
+                                    .send_command(RenderingThreadCommand::StopRendering);
+                            } else {
+                                self.rendering_thread
+                                    .send_command(RenderingThreadCommand::StartRendering);
+                            }
                         }
                     });
             });

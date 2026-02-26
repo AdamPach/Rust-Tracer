@@ -9,6 +9,7 @@ pub struct ApplicationState {
     size: Size,
     pub camera_state: CameraState,
     pub scene_state: SceneState,
+    pub rendering: bool,
 }
 
 impl ApplicationState {
@@ -27,6 +28,7 @@ impl Into<ApplicationState> for RustTracerConfiguration {
                 view_at: [0.0, 0.0, 0.0],
                 fov: 60.0,
             },
+            rendering: false,
         }
     }
 }
