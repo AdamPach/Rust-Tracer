@@ -40,11 +40,8 @@ impl Application {
     }
 
     fn try_update_application(&mut self, ctx: &Context) {
-        if let Ok(response) = self.rendering_thread.try_recv_response() {
+        while let Ok(response) = self.rendering_thread.try_read_responses() {
             match response {
-                Ok(RenderingThreadResponse::Render(render)) => {
-                    self.render = ctx.load_texture("Render", render, Default::default());
-                }
                 Ok(RenderingThreadResponse::CommandResponse(RaytracerResponse::SceneLoaded)) => {
                     self.state.scene_state = match &self.state.scene_state {
                         SceneState::Loading(path) => SceneState::Loaded(path.clone()),
@@ -53,12 +50,16 @@ impl Application {
                 }
                 Ok(RenderingThreadResponse::RenderingStarted) => {
                     self.state.rendering = true;
-                },
+                }
                 Ok(RenderingThreadResponse::RenderingStopped) => {
                     self.state.rendering = false;
                 }
                 _ => {}
             }
+        }
+
+        if let Some(render) = self.rendering_thread.get_last_render() {
+            self.render = ctx.load_texture("Render", render, Default::default());
         }
     }
 }
@@ -83,7 +84,11 @@ impl eframe::App for Application {
                 self.camera_settings_ui(ui);
                 self.scene_settings_ui(ui, ctx);
 
-                let run_button_text = if self.state.rendering { "Stop" } else { "Start" };
+                let run_button_text = if self.state.rendering {
+                    "Stop"
+                } else {
+                    "Start"
+                };
 
                 egui::CollapsingHeader::new("Rendering")
                     .default_open(false)
