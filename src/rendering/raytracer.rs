@@ -65,7 +65,11 @@ impl Raytracer {
             }
             (Raytracer::Running(raytracer), RaytracerCommand::CameraUpdate(camera)) => {
                 raytracer.set_camera(camera)?;
-                Ok(RaytracerResponse::RendererUpdated)
+                Ok(RaytracerResponse::CameraUpdated)
+            }
+            (Raytracer::Running(raytracer), RaytracerCommand::ClearAccumulator) => {
+                raytracer.clear_accumulator();
+                Ok(RaytracerResponse::AccumulatorCleared)
             }
             (Raytracer::NotRunning(raytracer), RaytracerCommand::SceneUpdate(scene)) => {
                 raytracer.set_scene(scene.loader())?;
@@ -73,7 +77,11 @@ impl Raytracer {
             }
             (Raytracer::NotRunning(raytracer), RaytracerCommand::CameraUpdate(camera)) => {
                 raytracer.set_camera(camera)?;
-                Ok(RaytracerResponse::RendererUpdated)
+                Ok(RaytracerResponse::CameraUpdated)
+            }
+            (Raytracer::NotRunning(raytracer), RaytracerCommand::ClearAccumulator) => {
+                raytracer.clear_accumulator();
+                Ok(RaytracerResponse::AccumulatorCleared)
             }
         }
     }
@@ -83,32 +91,6 @@ pub struct RunningRaytracer {
     settings: RaytracerSettings,
     rendering_thread_pool: ThreadPool<RaytracerRenderer>,
     accumulator: RenderAccumulator,
-}
-
-pub struct NonRunningRaytracer {
-    settings: RaytracerSettings,
-    renderer: RaytracerRenderer,
-    accumulator: RenderAccumulator,
-}
-
-impl NonRunningRaytracer {
-    fn set_camera(&mut self, camera_settings: CameraSettings) -> anyhow::Result<()> {
-        let camera = Camera::new(self.settings.size(), camera_settings);
-
-        self.renderer.set_camera(camera);
-        self.accumulator.clear();
-
-        Ok(())
-    }
-
-    fn set_scene<T: SceneBuilder>(&mut self, scene_builder: T) -> anyhow::Result<()> {
-        let scene = scene_builder.build_scene()?;
-
-        self.renderer.set_scene(scene);
-        self.accumulator.clear();
-
-        Ok(())
-    }
 }
 
 impl RunningRaytracer {
@@ -136,5 +118,39 @@ impl RunningRaytracer {
         render = self.rendering_thread_pool.render(render);
 
         render.get_render()
+    }
+
+    pub fn clear_accumulator(&mut self) {
+        self.accumulator.clear();
+    }
+}
+
+pub struct NonRunningRaytracer {
+    settings: RaytracerSettings,
+    renderer: RaytracerRenderer,
+    accumulator: RenderAccumulator,
+}
+
+impl NonRunningRaytracer {
+    fn set_camera(&mut self, camera_settings: CameraSettings) -> anyhow::Result<()> {
+        let camera = Camera::new(self.settings.size(), camera_settings);
+
+        self.renderer.set_camera(camera);
+        self.accumulator.clear();
+
+        Ok(())
+    }
+
+    fn set_scene<T: SceneBuilder>(&mut self, scene_builder: T) -> anyhow::Result<()> {
+        let scene = scene_builder.build_scene()?;
+
+        self.renderer.set_scene(scene);
+        self.accumulator.clear();
+
+        Ok(())
+    }
+
+    pub fn clear_accumulator(&mut self) {
+        self.accumulator.clear();
     }
 }

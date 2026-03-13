@@ -30,7 +30,7 @@ impl RenderAccumulator {
 
         AccumulatedRender {
             accumulator: self,
-            render: Render::new(size),
+            render: Render::black(size),
             missing_pixels: render_size as u32,
         }
     }
@@ -129,13 +129,16 @@ pub struct Render {
 }
 
 impl Render {
-    pub fn new(size: Size) -> Self {
+    pub fn black(size: Size) -> Self {
         let render_size = size.get_width() * size.get_height();
 
-        Self {
-            size,
-            pixels_rgba: vec![0; render_size * 4],
+        let mut pixels_rgba = Vec::with_capacity(render_size * 4);
+
+        for _ in 0..render_size {
+            pixels_rgba.extend_from_slice(&[0, 0, 0, 255]);
         }
+
+        Self { size, pixels_rgba }
     }
 
     fn add_pixel<T: Into<ColorU8>>(&mut self, pixel_position: &PixelPosition, pixel: T) {

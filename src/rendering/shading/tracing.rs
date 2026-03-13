@@ -1,4 +1,4 @@
-use crate::core::render::color::{A, B, Color, G, R};
+use crate::core::render::color::Color;
 use crate::raytracing::material::MaterialType;
 use crate::raytracing::{GeometryPrimitive, Ray, RayHit, Scene};
 use crate::rendering::shading::ambient::ambient_material_shader;
@@ -28,11 +28,11 @@ impl<'a> TracingContext<'a> {
 
 pub fn trace_ray(ray: Ray, ctx: TracingContext) -> Color {
     if ctx.depth >= ctx.max_depth {
-        return Color::new(R::new(0.05), G::new(0.05), B::new(0.05), A::new(1.0));
+        return Color::black();
     }
 
     let Some(ray_hit) = ctx.scene.find_intersection(ray) else {
-        return Color::new(R::new(0.05), G::new(0.05), B::new(0.05), A::new(1.0));
+        return Color::black();
     };
 
     let geometry = ctx.scene.get_geometry(&ray_hit.geometry_index());

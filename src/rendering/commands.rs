@@ -6,11 +6,13 @@ use std::path::PathBuf;
 pub enum RaytracerCommand {
     CameraUpdate(CameraSettings),
     SceneUpdate(SceneLoadingDta),
+    ClearAccumulator,
 }
 
 pub enum RaytracerResponse {
     SceneLoaded,
-    RendererUpdated,
+    CameraUpdated,
+    AccumulatorCleared,
 }
 
 pub enum SceneLoadingDta {
