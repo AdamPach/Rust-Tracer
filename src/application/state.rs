@@ -1,4 +1,7 @@
+use crate::application::camera_settings::CameraSettingsViewEvent;
 use crate::application::notifications::Notification;
+use crate::application::rendering_settings::RenderingSettingsViewEvent;
+use crate::application::scene_settings::SceneSettingsViewEvent;
 use crate::core::geometry::coordinates::{X, Y, Z};
 use crate::core::geometry::point::Point;
 use crate::rendering::CameraSettings;
@@ -7,32 +10,74 @@ use crate::{RustTracerConfiguration, Size};
 
 pub enum ApplicationStateUpdate {
     RemoveNotification(usize),
-    CameraUpdate,
+    CameraEvent(CameraSettingsViewEvent),
+    SceneEvent(SceneSettingsViewEvent),
+    RendererEvent(RenderingSettingsViewEvent),
 }
 
 #[derive(Clone)]
 pub struct ApplicationState {
     size: Size,
-    pub camera_state: CameraState,
-    pub scene_state: SceneState,
-    pub rendering: bool,
-    pub notifications: Vec<Notification>,
+    camera_state: CameraState,
+    scene_state: SceneState,
+    rendering: bool,
+    notifications: Vec<Notification>,
 }
 
 impl ApplicationState {
     pub fn render_size(&self) -> &Size {
         &self.size
     }
+
+    pub fn camera_state(&self) -> &CameraState {
+        &self.camera_state
+    }
+
+    pub fn change_camera(&mut self, camera_state: CameraState) {
+        self.camera_state = camera_state;
+    }
+
+    pub fn rendering(&self) -> &bool {
+        &self.rendering
+    }
+
+    pub fn change_rendering(&mut self, rendering: bool) {
+        self.rendering = rendering;
+    }
+
+    pub fn scene_state(&self) -> &SceneState {
+        &self.scene_state
+    }
+
+    pub fn change_scene_state(&mut self, scene_state: SceneState) {
+        self.scene_state = scene_state;
+    }
+
+    pub fn notifications(&self) -> &Vec<Notification> {
+        &self.notifications
+    }
+
+    pub fn remove_notification(&mut self, index: usize) {
+        if index < self.notifications.len() {
+            self.notifications.remove(index);
+        }
+    }
+
+    pub fn add_notification(&mut self, notification: Notification) {
+        self.notifications.push(notification);
+    }
+
+    pub fn retain_notifications(&mut self) {
+        self.notifications.retain(|n| !n.is_expired());
+    }
 }
 
 impl Into<ApplicationState> for RustTracerConfiguration {
     fn into(self) -> ApplicationState {
-        let mut not = vec![];
-
-        not.push(Notification::info(
+        let notifications = vec![Notification::info(
             "Welcome to the Raytracer! This is test message to see how huge text is displayed!"
                 .to_string(),
-        ));
+        )];
 
         ApplicationState {
             size: self.default_render_size().clone(),
@@ -43,7 +88,7 @@ impl Into<ApplicationState> for RustTracerConfiguration {
                 fov: 60.0,
             },
             rendering: false,
-            notifications: not,
+            notifications,
         }
     }
 }
@@ -56,9 +101,9 @@ impl Into<RaytracerSettings> for ApplicationState {
 
 #[derive(Clone)]
 pub struct CameraState {
-    pub position: [f64; 3],
-    pub view_at: [f64; 3],
-    pub fov: f64,
+    position: [f64; 3],
+    view_at: [f64; 3],
+    fov: f64,
 }
 
 impl CameraState {
@@ -68,6 +113,33 @@ impl CameraState {
             view_at,
             fov,
         }
+    }
+
+    pub fn position(&self) -> [f64; 3] {
+        self.position
+    }
+
+    pub fn view_at(&self) -> [f64; 3] {
+        self.view_at
+    }
+
+    pub fn fov(&self) -> f64 {
+        self.fov
+    }
+
+    pub fn with_position(mut self, position: [f64; 3]) -> Self {
+        self.position = position;
+        self
+    }
+
+    pub fn with_view_at(mut self, view_at: [f64; 3]) -> Self {
+        self.view_at = view_at;
+        self
+    }
+
+    pub fn with_fov(mut self, fov: f64) -> Self {
+        self.fov = fov;
+        self
     }
 }
 

@@ -1,12 +1,14 @@
-use crate::application::camera_settings::CameraSettingsView;
+use crate::application::camera_settings::{CameraSettingsView, CameraSettingsViewEvent};
 use crate::application::notifications::{Notification, NotificationsView};
+use crate::application::rendering_settings::{RenderingSettingsView, RenderingSettingsViewEvent};
 use crate::application::rendering_thread::{
     RenderingThread, RenderingThreadCommand, RenderingThreadResponse,
 };
+use crate::application::scene_settings::{SceneSettingsView, SceneSettingsViewEvent};
 use crate::application::state::{ApplicationState, ApplicationStateUpdate, SceneState};
 use crate::core::render::Render;
 use crate::rendering::{Raytracer, RaytracerCommand, RaytracerResponse, SceneLoadingDta};
-use eframe::egui::{Context, TextureHandle, Ui};
+use eframe::egui::{Context, TextureHandle};
 use eframe::epaint::{ColorImage, ImageData};
 use eframe::{Frame, egui};
 use egui_file_dialog::FileDialog;
@@ -25,21 +27,25 @@ impl Application {
     pub fn new(into_state: impl Into<ApplicationState>, ctx: &Context) -> Self {
         let state: ApplicationState = into_state.into();
 
+        let render = ctx.load_texture(
+            "Render",
+            Render::black(state.render_size().clone()),
+            Default::default(),
+        );
+
+        let file_dialog = FileDialog::new()
+            .add_file_filter(
+                "OBJ File",
+                Arc::new(|p| p.extension().unwrap_or_default() == "obj"),
+            )
+            .default_file_filter("OBJ File");
+
         Self {
-            render: ctx.load_texture(
-                "Render",
-                Render::black(state.render_size().clone()),
-                Default::default(),
-            ),
+            render,
             rendering_thread: RenderingThread::new(Raytracer::new(state.clone())),
             state,
             state_updates: vec![],
-            file_dialog: FileDialog::new()
-                .add_file_filter(
-                    "OBJ File",
-                    Arc::new(|p| p.extension().unwrap_or_default() == "obj"),
-                )
-                .default_file_filter("OBJ File"),
+            file_dialog,
         }
     }
 
@@ -47,29 +53,65 @@ impl Application {
         while let Some(update) = self.state_updates.pop() {
             match update {
                 ApplicationStateUpdate::RemoveNotification(index) => {
-                    if index < self.state.notifications.len() {
-                        self.state.notifications.remove(index);
+                    self.state.remove_notification(index);
+                }
+                ApplicationStateUpdate::CameraEvent(event) => match event {
+                    CameraSettingsViewEvent::ChangePosition(position) => {
+                        self.state.change_camera(
+                            self.state.camera_state().clone().with_position(position),
+                        );
+                    }
+                    CameraSettingsViewEvent::ChangeViewAt(view_at) => {
+                        self.state
+                            .change_camera(self.state.camera_state().clone().with_view_at(view_at));
+                    }
+                    CameraSettingsViewEvent::ChangeFov(fov) => {
+                        self.state
+                            .change_camera(self.state.camera_state().clone().with_fov(fov));
+                    }
+                    CameraSettingsViewEvent::UpdateCamera => {
+                        self.rendering_thread
+                            .send_command(RenderingThreadCommand::SendCommand(
+                                RaytracerCommand::CameraUpdate(
+                                    self.state.camera_state().clone().into(),
+                                ),
+                            ));
                     }
                 },
-                ApplicationStateUpdate::CameraUpdate => {
-                    self.rendering_thread
-                        .send_command(RenderingThreadCommand::SendCommand(
-                            RaytracerCommand::CameraUpdate(self.state.camera_state.clone().into()),
-                        ));
-                }
+                ApplicationStateUpdate::SceneEvent(event) => match event {
+                    SceneSettingsViewEvent::LoadScene => self.file_dialog.pick_file(),
+                },
+                ApplicationStateUpdate::RendererEvent(event) => match event {
+                    RenderingSettingsViewEvent::StartRendering => {
+                        self.rendering_thread
+                            .send_command(RenderingThreadCommand::StartRendering);
+                    }
+                    RenderingSettingsViewEvent::StopRendering => {
+                        self.rendering_thread
+                            .send_command(RenderingThreadCommand::StopRendering);
+                    }
+                    RenderingSettingsViewEvent::ResetRendering => {
+                        self.rendering_thread
+                            .send_command(RenderingThreadCommand::SendCommand(
+                                RaytracerCommand::ClearAccumulator,
+                            ));
+                    }
+                },
             }
         }
 
         while let Ok(response) = self.rendering_thread.try_read_responses() {
             match response {
                 Ok(RenderingThreadResponse::CommandResponse(RaytracerResponse::SceneLoaded)) => {
-                    self.state.scene_state = match &self.state.scene_state {
-                        SceneState::Loading(path) => SceneState::Loaded(path.clone()),
-                        _ => SceneState::None,
-                    }
+                    self.state
+                        .change_scene_state(match self.state.scene_state() {
+                            SceneState::Loading(path) => SceneState::Loaded(path.clone()),
+                            _ => SceneState::None,
+                        });
                 }
                 Ok(RenderingThreadResponse::CommandResponse(RaytracerResponse::CameraUpdated)) => {
-                    self.state.notifications.push(Notification::ok("Camera updated".to_string()));
+                    self.state
+                        .add_notification(Notification::ok("Camera updated".to_string()));
                 }
                 Ok(RenderingThreadResponse::CommandResponse(
                     RaytracerResponse::AccumulatorCleared,
@@ -81,10 +123,10 @@ impl Application {
                     );
                 }
                 Ok(RenderingThreadResponse::RenderingStarted) => {
-                    self.state.rendering = true;
+                    self.state.change_rendering(true);
                 }
                 Ok(RenderingThreadResponse::RenderingStopped) => {
-                    self.state.rendering = false;
+                    self.state.change_rendering(false);
                 }
                 Err(_) => {}
             }
@@ -94,7 +136,7 @@ impl Application {
             self.render = ctx.load_texture("Render", render, Default::default());
         }
 
-        self.state.notifications.retain(|n| !n.is_expired())
+        self.state.retain_notifications();
     }
 }
 
@@ -115,74 +157,29 @@ impl eframe::App for Application {
             .default_width(300.0)
             .resizable(false)
             .show(ctx, |ui| {
-                NotificationsView::new(&self.state.notifications).ui(ui, |index| {
+                NotificationsView::new(&self.state.notifications()).ui(ui, |index| {
                     self.state_updates
                         .push(ApplicationStateUpdate::RemoveNotification(index));
                 });
 
-                CameraSettingsView::from_state(&mut self.state.camera_state).ui(ui, ||{
-                        self.state_updates.push(ApplicationStateUpdate::CameraUpdate);
+                CameraSettingsView::new(&self.state.camera_state()).ui(ui, |event| {
+                    self.state_updates
+                        .push(ApplicationStateUpdate::CameraEvent(event));
                 });
 
-                self.scene_settings_ui(ui, ctx);
-
-                egui::CollapsingHeader::new("Rendering")
-                    .default_open(false)
-                    .show(ui, |ui| {
-                        let run_button_text = if self.state.rendering {
-                            "Stop"
-                        } else {
-                            "Start"
-                        };
-
-                        if ui.button(run_button_text).clicked() {
-                            if self.state.rendering {
-                                self.rendering_thread
-                                    .send_command(RenderingThreadCommand::StopRendering);
-                            } else {
-                                self.rendering_thread
-                                    .send_command(RenderingThreadCommand::StartRendering);
-                            }
-                        }
-
-                        if ui.button("Reset Render").clicked() {
-                            self.rendering_thread.send_command(
-                                RenderingThreadCommand::SendCommand(
-                                    RaytracerCommand::ClearAccumulator,
-                                ),
-                            );
-                        }
-                    });
-            });
-    }
-}
-
-impl Application {
-    fn scene_settings_ui(&mut self, ui: &mut Ui, ctx: &Context) {
-        egui::CollapsingHeader::new("Scene")
-            .default_open(false)
-            .show(ui, |ui| {
-                egui::Grid::new("scene_grid")
-                    .num_columns(2)
-                    .spacing([40.0, 4.0])
-                    .show(ui, |ui| {
-                        ui.label(self.state.scene_state.string_status());
-
-                        ui.end_row();
-
-                        if ui.button("Load OBJ Scene").clicked() {
-                            self.file_dialog.pick_file()
-                        }
-
-                        if ui.button("Remove Scene").clicked() {}
-                    });
+                SceneSettingsView::new(&self.state.scene_state()).ui(ui, |event| match event {
+                    SceneSettingsViewEvent::LoadScene => {
+                        self.state_updates
+                            .push(ApplicationStateUpdate::SceneEvent(event));
+                    }
+                });
 
                 self.file_dialog.update(ctx);
 
                 if let Some(path) = self.file_dialog.take_picked() {
-                    self.state.scene_state = SceneState::Loading(
+                    self.state.change_scene_state(SceneState::Loading(
                         path.file_name().unwrap().to_str().unwrap().to_string(),
-                    );
+                    ));
 
                     self.rendering_thread
                         .send_command(RenderingThreadCommand::SendCommand(
@@ -191,6 +188,11 @@ impl Application {
                             }),
                         ));
                 }
+
+                RenderingSettingsView::new(&self.state.rendering()).ui(ui, |event| {
+                    self.state_updates
+                        .push(ApplicationStateUpdate::RendererEvent(event));
+                })
             });
     }
 }
